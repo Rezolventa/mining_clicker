@@ -11,6 +11,7 @@ class ActionManager:
     def __init__(self, main_controller):
         self.main_controller = main_controller
         self.panel = SelectorUI(main_controller.display_manager.buttons)
+        self.main_screen = self.main_controller.display_manager.main_screen
 
     def get_hovered_object(self):
         """Возвращает спрайт, над которым в текущий момент находится курсор."""
@@ -18,7 +19,8 @@ class ActionManager:
             if button.rect.collidepoint(pygame.mouse.get_pos()):
                 return button
 
-        # self.main_controller.display_manager.
+        if self.main_screen.rect.collidepoint(pygame.mouse.get_pos()):
+            return self.main_screen
 
         return None
 
@@ -26,8 +28,7 @@ class ActionManager:
         """
         Обрабатывает ежефреймные события
         """
-        # self.handle_mouse_hover()
-        pass
+        self.main_screen.add_animation_count()
 
     def handle_mouse_click(self):
         """
@@ -37,6 +38,8 @@ class ActionManager:
         if obj in self.panel.buttons:
             self.panel.set_active_button(obj)
 
+        if obj == self.main_controller.display_manager.main_screen:
+            obj.do_pickaxe_hit()
 
 
 class SelectorUI:

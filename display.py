@@ -28,14 +28,7 @@ class DisplayManager:
         self.main_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.buttons = self.init_panel_buttons()
 
-        # main_screen - refactoring as Sprite
-        self.main_screen = get_scaled_image("sprites/main_screen.png", 4)
-        main_screen_rect = self.main_screen.get_rect()
-        main_screen_rect.topleft = (236, 0)
-
-        self.ore_sprite = get_scaled_image("sprites/ore.png", 12)
-
-        self.pickaxe_sprite = get_scaled_image("sprites/pickaxe.png", 8)
+        self.main_screen = MainScreen()
 
     def init_panel_buttons(self):
         mining_button = Button(
@@ -68,11 +61,7 @@ class DisplayManager:
         for obj in self.buttons:
             obj.draw(self.main_surface)
 
-        # main_screen
-        self.main_surface.blit(self.main_screen, (236, 0))
-        self.main_surface.blit(self.ore_sprite, (400, 250))
-        self.main_surface.blit(self.pickaxe_sprite, (500, 250))
-
+        self.main_screen.draw(self.main_surface)
 
 
 class Button(pygame.sprite.Sprite):
@@ -106,7 +95,42 @@ class Button(pygame.sprite.Sprite):
         surface.blit(self.image, self.rect)
 
 
-# class Screen(pygame.sprite.Sprite):
-#     def __init__(self):
-#         pass
+class MainScreen:
+    def __init__(self):
+        self.background_image = get_scaled_image("sprites/main_screen.png", 4)
+        self.rect = self.background_image.get_rect()
+        self.rect.topleft = (236, 0)
+
+        self.ore_image = get_scaled_image("sprites/ore.png", 12)
+        self.pickaxe_idle_image = get_scaled_image("sprites/pickaxe.png", 8)
+        self.pickaxe_hit_image = get_scaled_image("sprites/pickaxe_hit.png", 8)
+
+        self.animation_count = 0
+        self.animation_count_limit = 5
+
+        self.pickaxe_hit = False
+        self.pickaxe_image = self.pickaxe_idle_image
+
+    def do_pickaxe_hit(self):
+        self.pickaxe_hit = True
+        self.animation_count = 0
+        self.update()
+
+    def add_animation_count(self):
+        self.animation_count += 1
+        if self.animation_count == self.animation_count_limit:
+            self.animation_count = 0
+            self.pickaxe_hit = False
+            self.update()
+
+    def update(self):
+        if self.pickaxe_hit:
+            self.pickaxe_image = self.pickaxe_hit_image
+        else:
+            self.pickaxe_image = self.pickaxe_idle_image
+
+    def draw(self, surface):
+        surface.blit(self.background_image, self.rect)
+        surface.blit(self.ore_image, (400, 250))
+        surface.blit(self.pickaxe_image, (500, 250))
 

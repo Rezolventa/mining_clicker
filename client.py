@@ -31,6 +31,7 @@ def main():
                 main_controller.action_manager.handle_mouse_click()
 
         if running:
+            main_controller.action_manager.handle_routine()
             main_controller.display_manager.render_all()
             pygame.display.flip()
 
