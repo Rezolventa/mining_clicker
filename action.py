@@ -14,7 +14,9 @@ class ActionManager:
         self.main_screen = self.main_controller.display_manager.main_screen
 
     def get_hovered_object(self):
-        """Возвращает спрайт, над которым в текущий момент находится курсор."""
+        """
+        Возвращает спрайт, над которым в текущий момент находится курсор
+        """
         for button in self.panel.buttons:
             if button.rect.collidepoint(pygame.mouse.get_pos()):
                 return button
@@ -29,6 +31,7 @@ class ActionManager:
         Обрабатывает ежефреймные события
         """
         self.main_screen.add_animation_count()
+        self.main_controller.display_manager.add_animation_count()
 
     def handle_mouse_click(self):
         """
@@ -40,11 +43,12 @@ class ActionManager:
 
         if obj == self.main_controller.display_manager.main_screen:
             obj.do_pickaxe_hit()
+            self.main_controller.display_manager.highlight_text(pygame.mouse.get_pos())
 
 
 class SelectorUI:
     """
-    Абстрактный класс селектор, отвечающий за логику, но не отвечающий за отображение.
+    Абстрактный класс селектор, отвечающий за логику, но не за отображение.
     Из всех элементов активен может быть только один.
     """
     def __init__(self, buttons):
@@ -60,3 +64,8 @@ class SelectorUI:
             button.update()
 
         self.active_button = new_active_button
+
+
+# class BankManager:
+#     def __init__(self):
+#         pass

@@ -1,10 +1,9 @@
 import pygame
 
+from conts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND
 
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
-
-WHITE = (255, 255, 255)
+pygame.font.init()
+default_font = pygame.font.SysFont("serif", 30)
 
 
 def get_scaled_image(image, k = 1) -> pygame.surface.Surface:
@@ -23,12 +22,22 @@ def get_scaled_image(image, k = 1) -> pygame.surface.Surface:
     return pygame.transform.scale(image, (int(size[0] * k), int(size[1] * k)))
 
 
+class AnimatedObject:
+    def add_animation_count(self):
+        raise NotImplementedError
+
+    def draw(self, surface):
+        raise NotImplementedError
+
+
 class DisplayManager:
     def __init__(self):
         self.main_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.buttons = self.init_panel_buttons()
 
         self.main_screen = MainScreen()
+
+        self.other_object = []
 
     def init_panel_buttons(self):
         mining_button = Button(
@@ -63,6 +72,23 @@ class DisplayManager:
 
         self.main_screen.draw(self.main_surface)
 
+        for obj in self.other_object:
+            if obj.show:
+                obj.draw(self.main_surface)
+            else:
+                self.other_object.remove(obj)
+
+    def highlight_text(self, coords):
+        self.other_object.append(LiftingText("test text", coords))
+
+    def get_animated_objects(self) -> list[AnimatedObject]:
+        result = [self.main_screen] + self.other_object
+        return result
+
+    def add_animation_count(self):
+        for obj in self.get_animated_objects():
+            obj.add_animation_count()
+
 
 class Button(pygame.sprite.Sprite):
     def __init__(
@@ -95,7 +121,7 @@ class Button(pygame.sprite.Sprite):
         surface.blit(self.image, self.rect)
 
 
-class MainScreen:
+class MainScreen(AnimatedObject):
     def __init__(self):
         self.background_image = get_scaled_image("sprites/main_screen.png", 4)
         self.rect = self.background_image.get_rect()
@@ -114,23 +140,54 @@ class MainScreen:
     def do_pickaxe_hit(self):
         self.pickaxe_hit = True
         self.animation_count = 0
-        self.update()
+        self.pickaxe_image = self.pickaxe_hit_image
 
     def add_animation_count(self):
         self.animation_count += 1
         if self.animation_count == self.animation_count_limit:
             self.animation_count = 0
             self.pickaxe_hit = False
-            self.update()
-
-    def update(self):
-        if self.pickaxe_hit:
-            self.pickaxe_image = self.pickaxe_hit_image
-        else:
             self.pickaxe_image = self.pickaxe_idle_image
 
     def draw(self, surface):
         surface.blit(self.background_image, self.rect)
         surface.blit(self.ore_image, (400, 250))
         surface.blit(self.pickaxe_image, (500, 250))
+
+
+class LiftingText(AnimatedObject):
+    animation_speed = 3
+    time_to_live_seconds = 2
+
+    def __init__(self, text, coords: tuple):
+        self.text = text
+        self.image = default_font.render(text, True, WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.center = coords
+        self.show = True
+
+        self.animation_count = 0
+
+    def draw(self, surface):
+        x = self.rect.topleft[0]
+        y = self.rect.topleft[1]
+        self.rect.topleft = (x, y - 1)
+        surface.blit(self.image, self.rect)
+
+    def add_animation_count(self):
+        ticks_to_live = self.time_to_live_seconds * TICKS_PER_SECOND
+        self.animation_count += 1
+        if self.animation_count == ticks_to_live:
+            self.animation_count = 0
+            self.show = False
+
+
+# class StableText:
+#     def __init__(self, text, coords: tuple):
+#
+#
+# class RowImageAndText:
+#     def __init__(self, image, initial_text):
+#         self.image
+
 

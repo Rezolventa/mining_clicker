@@ -1,16 +1,17 @@
 import pygame
 
 from action import ActionManager
+from conts import TICKS_PER_SECOND
 from display import DisplayManager
 
 pygame.init()
-pygame.font.init()
 
 
 class MainController:
     def __init__(self):
         self.display_manager = DisplayManager()
         self.action_manager = ActionManager(self)
+        # self.bank_manager = BankManager(self)
 
 
 def main():
@@ -20,20 +21,18 @@ def main():
     running = True
 
     while running:
-        clock.tick(30)
+        clock.tick(TICKS_PER_SECOND)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
                 pygame.quit()
-                break
+                return
             elif event.type == pygame.MOUSEBUTTONUP:
                 main_controller.action_manager.handle_mouse_click()
 
-        if running:
-            main_controller.action_manager.handle_routine()
-            main_controller.display_manager.render_all()
-            pygame.display.flip()
+        main_controller.action_manager.handle_routine()
+        main_controller.display_manager.render_all()
+        pygame.display.flip()
 
 if __name__ == '__main__':
     main()
