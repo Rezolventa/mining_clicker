@@ -11,7 +11,6 @@ class MainController:
     def __init__(self):
         self.display_manager = DisplayManager()
         self.action_manager = ActionManager(self)
-        # self.bank_manager = BankManager(self)
 
 
 def main():
@@ -33,6 +32,7 @@ def main():
         main_controller.action_manager.handle_routine()
         main_controller.display_manager.render_all()
         pygame.display.flip()
+
 
 if __name__ == '__main__':
     main()

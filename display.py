@@ -23,6 +23,10 @@ def get_scaled_image(image, k = 1) -> pygame.surface.Surface:
 
 
 class AnimatedObject:
+    """
+    Абстрактный класс для определения общих методов и их сигнатур
+    """
+
     def add_animation_count(self):
         raise NotImplementedError
 
@@ -38,6 +42,9 @@ class DisplayManager:
         self.main_screen = MainScreen()
 
         self.other_object = []
+
+        self.iron_scrap_icon_text = RowIconAndText("sprites/1.png", "0", (1000, 400))
+        self.iron_ore_icon_text = RowIconAndText("sprites/2.png", "0", (1000, 450))
 
     def init_panel_buttons(self):
         mining_button = Button(
@@ -72,14 +79,19 @@ class DisplayManager:
 
         self.main_screen.draw(self.main_surface)
 
-        for obj in self.other_object:
+        # если использовать self.other_object, возникает баг отображения при удалении элемента "на лету"
+        temp_list = self.other_object.copy()
+        for obj in temp_list:
             if obj.show:
                 obj.draw(self.main_surface)
             else:
                 self.other_object.remove(obj)
 
+        self.iron_scrap_icon_text.draw(self.main_surface)
+        self.iron_ore_icon_text.draw(self.main_surface)
+
     def highlight_text(self, coords):
-        self.other_object.append(LiftingText("test text", coords))
+        self.other_object.append(LiftingText("+1 iron ore scrap", coords))
 
     def get_animated_objects(self) -> list[AnimatedObject]:
         result = [self.main_screen] + self.other_object
@@ -182,12 +194,21 @@ class LiftingText(AnimatedObject):
             self.show = False
 
 
-# class StableText:
-#     def __init__(self, text, coords: tuple):
-#
-#
-# class RowImageAndText:
-#     def __init__(self, image, initial_text):
-#         self.image
+class RowIconAndText:
+    def __init__(self, icon_image_url, initial_text, bottom_left_coords):
+        self.icon = get_scaled_image(icon_image_url)
+        self.icon_rect = self.icon.get_rect()
+        self.icon_rect.bottomleft = bottom_left_coords
 
+        self.text_image = default_font.render(initial_text, True,  WHITE)
+        self.text_rect = self.text_image.get_rect()
+        self.text_rect.bottomleft = (self.icon_rect.bottomleft[0] + 30, self.icon_rect.bottomleft[1])
 
+    def draw(self, surface):
+        surface.blit(self.icon, self.icon_rect)
+        surface.blit(self.text_image, self.text_rect)
+
+    def change_text(self, new_text):
+        text_rect = self.text_rect
+        self.text_image = default_font.render(new_text, True,  WHITE)
+        self.text_rect = text_rect
