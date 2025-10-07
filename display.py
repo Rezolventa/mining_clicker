@@ -1,6 +1,7 @@
 import pygame
 
 from conts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND
+from items import PoorIronOre, IronOre
 
 pygame.font.init()
 default_font = pygame.font.SysFont("serif", 30)
@@ -39,12 +40,10 @@ class DisplayManager:
         self.main_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.buttons = self.init_panel_buttons()
 
-        self.main_screen = MainScreen()
+        self.middle_screen = MiddleScreen()
 
-        self.other_object = []
-
-        self.iron_scrap_icon_text = RowIconAndText("sprites/1.png", "0", (1000, 400))
-        self.iron_ore_icon_text = RowIconAndText("sprites/2.png", "0", (1000, 450))
+        self.highlight_text_objects = []
+        self.bank_table = BankTable((1000, 400))
 
     def init_panel_buttons(self):
         mining_button = Button(
@@ -69,7 +68,8 @@ class DisplayManager:
         )
         vendor_button.rect.bottomleft = (0, SCREEN_HEIGHT)
 
-        return [mining_button, crafting_button, vendor_button]
+        buttons = [mining_button, crafting_button, vendor_button]
+        return buttons
 
     def render_all(self):
         self.main_surface.fill((0, 0, 0))
@@ -77,24 +77,23 @@ class DisplayManager:
         for obj in self.buttons:
             obj.draw(self.main_surface)
 
-        self.main_screen.draw(self.main_surface)
+        self.middle_screen.draw(self.main_surface)
 
-        # если использовать self.other_object, возникает баг отображения при удалении элемента "на лету"
-        temp_list = self.other_object.copy()
+        # если использовать self.highlight_text_objects, возникает баг отображения при удалении элемента "на лету"
+        temp_list = self.highlight_text_objects.copy()
         for obj in temp_list:
             if obj.show:
                 obj.draw(self.main_surface)
             else:
-                self.other_object.remove(obj)
+                self.highlight_text_objects.remove(obj)
 
-        self.iron_scrap_icon_text.draw(self.main_surface)
-        self.iron_ore_icon_text.draw(self.main_surface)
+        self.bank_table.draw(self.main_surface)
 
-    def highlight_text(self, coords):
-        self.other_object.append(LiftingText("+1 iron ore scrap", coords))
+    def highlight_text(self, item_name, coords):
+        self.highlight_text_objects.append(LiftingText(f"+1 {item_name}", coords))
 
     def get_animated_objects(self) -> list[AnimatedObject]:
-        result = [self.main_screen] + self.other_object
+        result = [self.middle_screen] + self.highlight_text_objects
         return result
 
     def add_animation_count(self):
@@ -133,15 +132,15 @@ class Button(pygame.sprite.Sprite):
         surface.blit(self.image, self.rect)
 
 
-class MainScreen(AnimatedObject):
+class MiddleScreen(AnimatedObject):
     def __init__(self):
-        self.background_image = get_scaled_image("sprites/main_screen.png", 4)
+        self.background_image = get_scaled_image("sprites/middle_screen.png", 4)
         self.rect = self.background_image.get_rect()
         self.rect.topleft = (236, 0)
 
-        self.ore_image = get_scaled_image("sprites/ore.png", 12)
-        self.pickaxe_idle_image = get_scaled_image("sprites/pickaxe.png", 8)
-        self.pickaxe_hit_image = get_scaled_image("sprites/pickaxe_hit.png", 8)
+        self.ore_image = get_scaled_image("sprites/ore.png", 16)
+        self.pickaxe_idle_image = get_scaled_image("sprites/pickaxe.png", 12)
+        self.pickaxe_hit_image = get_scaled_image("sprites/pickaxe_hit.png", 12)
 
         self.animation_count = 0
         self.animation_count_limit = 5
@@ -194,13 +193,16 @@ class LiftingText(AnimatedObject):
             self.show = False
 
 
-class RowIconAndText:
-    def __init__(self, icon_image_url, initial_text, bottom_left_coords):
-        self.icon = get_scaled_image(icon_image_url)
+class ObjectRowIconAndText:
+    def __init__(self, item, bottom_left_coords):
+        self.item = item
+        self.icon = get_scaled_image(item.image_url)
         self.icon_rect = self.icon.get_rect()
         self.icon_rect.bottomleft = bottom_left_coords
 
-        self.text_image = default_font.render(initial_text, True,  WHITE)
+        self.quantity = 0
+
+        self.text_image = default_font.render("x0", True, WHITE)
         self.text_rect = self.text_image.get_rect()
         self.text_rect.bottomleft = (self.icon_rect.bottomleft[0] + 30, self.icon_rect.bottomleft[1])
 
@@ -208,7 +210,33 @@ class RowIconAndText:
         surface.blit(self.icon, self.icon_rect)
         surface.blit(self.text_image, self.text_rect)
 
-    def change_text(self, new_text):
+    def change_quantity(self, quantity):
+        self.quantity = quantity
         text_rect = self.text_rect
-        self.text_image = default_font.render(new_text, True,  WHITE)
+        self.text_image = default_font.render("x" + str(quantity), True, WHITE)
         self.text_rect = text_rect
+
+    def __repr__(self):
+        return self.item.slug
+
+
+class BankTable:
+    space_between_rows_px = 30
+
+    def __init__(self, top_left_coords):
+        self.top_left_coords = top_left_coords
+        self.items_list = [PoorIronOre, IronOre]
+        self.rows = []
+
+        for item in self.items_list:
+            self.top_left_coords = (self.top_left_coords[0], self.top_left_coords[1] + self.space_between_rows_px)
+            self.rows.append(ObjectRowIconAndText(item, self.top_left_coords))
+
+    def draw(self, surface):
+        for row in self.rows:
+            row.draw(surface)
+
+    def get_row(self, item_slug: str) -> ObjectRowIconAndText:
+        for row in self.rows:
+            if row.item.slug == item_slug:
+                return row
