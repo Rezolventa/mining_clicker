@@ -12,9 +12,10 @@ class ActionManager:
 
     def __init__(self, main_controller):
         self.main_controller = main_controller
-        self.panel = SelectorUI(main_controller.display_manager.buttons)
+        self.display_manager = main_controller.display_manager
+        self.panel = SelectorUI(self.display_manager.buttons)
 
-        self.middle_screen = self.main_controller.display_manager.middle_screen
+        self.middle_screen = self.display_manager.middle_screen
 
     def get_hovered_object(self):
         """
@@ -34,7 +35,7 @@ class ActionManager:
         Обрабатывает ежефреймные события
         """
         self.middle_screen.add_animation_count()
-        self.main_controller.display_manager.add_animation_count()
+        self.display_manager.add_animation_count()
 
     def handle_mouse_click(self):
         """
@@ -43,16 +44,18 @@ class ActionManager:
         obj = self.get_hovered_object()
         if obj in self.panel.buttons:
             self.panel.set_active_button(obj)
+            self.display_manager.page = str(obj).split("_")[0]
 
-        if obj == self.main_controller.display_manager.middle_screen:
-            obj.do_pickaxe_hit()
+        if self.display_manager.page == self.display_manager.MINING_PAGE:
+            if obj == self.display_manager.middle_screen:
+                obj.do_pickaxe_hit()
 
-            dropped_item = DropChanceManager().get_drop()
-            row = self.main_controller.display_manager.bank_table.get_row(dropped_item)
-            dropped_quantity = 1
-            row.change_quantity(row.quantity + dropped_quantity)
+                dropped_item = DropChanceManager().get_drop()
+                row = self.display_manager.bank_table.get_row(dropped_item)
+                dropped_quantity = 1
+                row.add_quantity(dropped_quantity)
 
-            self.main_controller.display_manager.highlight_text(str(row), pygame.mouse.get_pos())
+                self.display_manager.highlight_text(str(row.item.highlight_text), pygame.mouse.get_pos())
 
 
 class SelectorUI:

@@ -36,6 +36,10 @@ class AnimatedObject:
 
 
 class DisplayManager:
+    MINING_PAGE = "mining"
+    CRAFTING_PAGE = "crafting"
+    VENDOR_PAGE = "vendor"
+
     def __init__(self):
         self.main_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.buttons = self.init_panel_buttons()
@@ -44,6 +48,8 @@ class DisplayManager:
 
         self.highlight_text_objects = []
         self.bank_table = BankTable((1000, 400))
+
+        self.page = self.MINING_PAGE
 
     def init_panel_buttons(self):
         mining_button = Button(
@@ -77,15 +83,16 @@ class DisplayManager:
         for obj in self.buttons:
             obj.draw(self.main_surface)
 
-        self.middle_screen.draw(self.main_surface)
+        if self.page == self.MINING_PAGE:
+            self.middle_screen.draw(self.main_surface)
 
-        # если использовать self.highlight_text_objects, возникает баг отображения при удалении элемента "на лету"
-        temp_list = self.highlight_text_objects.copy()
-        for obj in temp_list:
-            if obj.show:
-                obj.draw(self.main_surface)
-            else:
-                self.highlight_text_objects.remove(obj)
+            # если использовать self.highlight_text_objects, возникает баг отображения при удалении элемента "на лету"
+            temp_list = self.highlight_text_objects.copy()
+            for obj in temp_list:
+                if obj.show:
+                    obj.draw(self.main_surface)
+                else:
+                    self.highlight_text_objects.remove(obj)
 
         self.bank_table.draw(self.main_surface)
 
@@ -210,10 +217,10 @@ class ObjectRowIconAndText:
         surface.blit(self.icon, self.icon_rect)
         surface.blit(self.text_image, self.text_rect)
 
-    def change_quantity(self, quantity):
-        self.quantity = quantity
+    def add_quantity(self, quantity):
+        self.quantity += quantity
         text_rect = self.text_rect
-        self.text_image = default_font.render("x" + str(quantity), True, WHITE)
+        self.text_image = default_font.render("x" + str(self.quantity), True, WHITE)
         self.text_rect = text_rect
 
     def __repr__(self):

@@ -10,9 +10,11 @@ class PoorIronOre(Item):
     name = "Poor Iron Ore"
     slug = "poor_iron_ore"
     image_url = "sprites/1.png"
+    highlight_text = "poor iron ore"
 
 
 class IronOre(Item):
     name = "Iron Ore"
     slug = "iron_ore"
     image_url = "sprites/2.png"
+    highlight_text = "iron ore"
