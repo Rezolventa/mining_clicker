@@ -18,3 +18,10 @@ class IronOre(Item):
     slug = "iron_ore"
     image_url = "sprites/2.png"
     highlight_text = "iron ore"
+
+
+class IronIngot(Item):
+    name = "Iron Ingot"
+    slug = "iron_ingot"
+    image_url = "sprites/iron_ore_ingot.png"
+    highlight_text = "iron ingot"

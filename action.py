@@ -3,6 +3,7 @@ import random
 import pygame
 
 from display import Button
+from items import IronIngot
 
 
 class ActionManager:
@@ -15,7 +16,8 @@ class ActionManager:
         self.display_manager = main_controller.display_manager
         self.panel = SelectorUI(self.display_manager.buttons)
 
-        self.middle_screen = self.display_manager.middle_screen
+        # текущий основной экран
+        self.middle_screen = self.display_manager.mining_middle_screen
 
     def get_hovered_object(self):
         """
@@ -25,8 +27,12 @@ class ActionManager:
             if button.rect.collidepoint(pygame.mouse.get_pos()):
                 return button
 
-        if self.middle_screen.rect.collidepoint(pygame.mouse.get_pos()):
-            return self.middle_screen
+        if self.display_manager.page == self.display_manager.MINING_PAGE:
+            if self.display_manager.middle_screen_background_image.rect.collidepoint(pygame.mouse.get_pos()):
+                return self.display_manager.middle_screen_background_image
+        elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
+            if self.display_manager.crafting_middle_screen.crafting_recipe_image.rect.collidepoint(pygame.mouse.get_pos()):
+                return self.display_manager.crafting_middle_screen.crafting_recipe_image
 
         return None
 
@@ -47,8 +53,8 @@ class ActionManager:
             self.display_manager.page = str(obj).split("_")[0]
 
         if self.display_manager.page == self.display_manager.MINING_PAGE:
-            if obj == self.display_manager.middle_screen:
-                obj.do_pickaxe_hit()
+            if obj == self.display_manager.middle_screen_background_image:
+                self.display_manager.mining_middle_screen.do_pickaxe_hit()
 
                 dropped_item = DropChanceManager().get_drop()
                 row = self.display_manager.bank_table.get_row(dropped_item)
@@ -56,6 +62,13 @@ class ActionManager:
                 row.add_quantity(dropped_quantity)
 
                 self.display_manager.highlight_text(str(row.item.highlight_text), pygame.mouse.get_pos())
+
+                self.display_manager.pickaxe_hit_pointer.start(pygame.mouse.get_pos())
+
+        elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
+            if obj == self.display_manager.crafting_middle_screen.crafting_recipe_image:
+                row = self.display_manager.bank_table.get_row(IronIngot.slug)
+                row.add_quantity(1)
 
 
 class SelectorUI:

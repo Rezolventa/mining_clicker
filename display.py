@@ -1,7 +1,8 @@
 import pygame
+from pygame.sprite import Sprite
 
 from conts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND
-from items import PoorIronOre, IronOre
+from items import PoorIronOre, IronOre, IronIngot
 
 pygame.font.init()
 default_font = pygame.font.SysFont("serif", 30)
@@ -23,6 +24,7 @@ def get_scaled_image(image, k = 1) -> pygame.surface.Surface:
     return pygame.transform.scale(image, (int(size[0] * k), int(size[1] * k)))
 
 
+# TODO: как будто бы на хрен не нужен
 class AnimatedObject:
     """
     Абстрактный класс для определения общих методов и их сигнатур
@@ -42,14 +44,25 @@ class DisplayManager:
 
     def __init__(self):
         self.main_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.page = self.MINING_PAGE
+
+        # TODO: этот CommonSprite на хрен не нужен, лучше в draw напрямую указывать координаты, т.к. это статика
+        self.middle_screen_background_image = CommonSprite(get_scaled_image("sprites/middle_screen.png", 4))
+        self.middle_screen_background_image.rect.topleft = (236, 0)
+
+        # главная панель
         self.buttons = self.init_panel_buttons()
 
-        self.middle_screen = MiddleScreen()
-
+        # основной экран
+        # mining
+        self.mining_middle_screen = MiningMiddleScreen()
         self.highlight_text_objects = []
-        self.bank_table = BankTable((1000, 400))
+        self.pickaxe_hit_pointer = PickaxeHitPointer()
 
-        self.page = self.MINING_PAGE
+        self.crafting_middle_screen = CraftingMiddleScreen()
+
+        # банк/инвентарь
+        self.bank_table = BankTable((1000, 400))
 
     def init_panel_buttons(self):
         mining_button = Button(
@@ -68,7 +81,7 @@ class DisplayManager:
         crafting_button.rect.bottomleft = (0, SCREEN_HEIGHT - 120)
 
         vendor_button = Button(
-            "crafting_button",
+            "vendor_button",
             get_scaled_image("sprites/vendor_button_on.png", 2),
             get_scaled_image("sprites/vendor_button_off.png", 2),
         )
@@ -77,14 +90,22 @@ class DisplayManager:
         buttons = [mining_button, crafting_button, vendor_button]
         return buttons
 
-    def render_all(self):
-        self.main_surface.fill((0, 0, 0))
-
+    def render_common_ui(self):
         for obj in self.buttons:
             obj.draw(self.main_surface)
 
+        self.middle_screen_background_image.draw(self.main_surface)
+
+    def render_all(self):
+        self.main_surface.fill((0, 0, 0))
+
+        # self.render_common_ui()
+
+        # for obj in self.buttons:
+        #     obj.draw(self.main_surface)
+
         if self.page == self.MINING_PAGE:
-            self.middle_screen.draw(self.main_surface)
+            self.mining_middle_screen.draw(self.main_surface)
 
             # если использовать self.highlight_text_objects, возникает баг отображения при удалении элемента "на лету"
             temp_list = self.highlight_text_objects.copy()
@@ -94,16 +115,25 @@ class DisplayManager:
                 else:
                     self.highlight_text_objects.remove(obj)
 
+            self.pickaxe_hit_pointer.draw(self.main_surface)
+        elif self.page == self.CRAFTING_PAGE:
+            self.crafting_middle_screen.draw(self.main_surface)
+
+        self.render_common_ui()
+
         self.bank_table.draw(self.main_surface)
 
     def highlight_text(self, item_name, coords):
         self.highlight_text_objects.append(LiftingText(f"+1 {item_name}", coords))
 
     def get_animated_objects(self) -> list[AnimatedObject]:
-        result = [self.middle_screen] + self.highlight_text_objects
+        result = [self.mining_middle_screen] + self.highlight_text_objects
+        if self.pickaxe_hit_pointer.show:
+            result.append(self.pickaxe_hit_pointer)
         return result
 
     def add_animation_count(self):
+        # TODO: каждый раз вычислять get_animated_objects это неоптимально
         for obj in self.get_animated_objects():
             obj.add_animation_count()
 
@@ -112,18 +142,18 @@ class Button(pygame.sprite.Sprite):
     def __init__(
         self,
         name: str,
-        sprite_on,
-        sprite_off,
+        image_on,
+        image_off,
         on: bool = False
     ):
         super().__init__()
         self.name = name
-        self.sprite_on = sprite_on
-        self.sprite_off = sprite_off
+        self.image_on = image_on  # TODO: rename -> image_on
+        self.image_off = image_off
 
         self.on = on
 
-        self.image = self.sprite_on if on else self.sprite_off
+        self.image = self.image_on if on else self.image_off
         self.rect = self.image.get_rect()
 
     def __repr__(self):
@@ -131,19 +161,29 @@ class Button(pygame.sprite.Sprite):
 
     def update(self):
         if self.on:
-            self.image = self.sprite_on
+            self.image = self.image_on
         else:
-            self.image = self.sprite_off
+            self.image = self.image_off
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
 
-class MiddleScreen(AnimatedObject):
+class CommonSprite:
+    def __init__(self, image):
+        self.image = image
+        self.rect = image.get_rect()
+
+    def draw(self, surface):
+        surface.blit(self.image, self.rect)
+
+
+class MiningMiddleScreen(AnimatedObject):
     def __init__(self):
-        self.background_image = get_scaled_image("sprites/middle_screen.png", 4)
-        self.rect = self.background_image.get_rect()
-        self.rect.topleft = (236, 0)
+        # self.background_image = get_scaled_image("sprites/middle_screen.png", 4)
+        # self.rect = self.background_image.get_rect()
+        # self.rect.topleft = (236, 0)
+        self.middle_screen_background_image = get_scaled_image("sprites/mining_background.png", 4)
 
         self.ore_image = get_scaled_image("sprites/ore.png", 16)
         self.pickaxe_idle_image = get_scaled_image("sprites/pickaxe.png", 12)
@@ -168,9 +208,18 @@ class MiddleScreen(AnimatedObject):
             self.pickaxe_image = self.pickaxe_idle_image
 
     def draw(self, surface):
-        surface.blit(self.background_image, self.rect)
-        surface.blit(self.ore_image, (400, 250))
+        surface.blit(self.middle_screen_background_image, (236, 0))
+        # surface.blit(self.ore_image, (400, 250))
         surface.blit(self.pickaxe_image, (500, 250))
+
+
+class CraftingMiddleScreen(AnimatedObject):
+    def __init__(self):
+        self.crafting_recipe_image = CommonSprite(get_scaled_image("sprites/crafting_iron_ingot.png", 4))
+        self.crafting_recipe_image.rect.topleft = (300, 250)
+
+    def draw(self, surface):
+        self.crafting_recipe_image.draw(surface)
 
 
 class LiftingText(AnimatedObject):
@@ -232,7 +281,8 @@ class BankTable:
 
     def __init__(self, top_left_coords):
         self.top_left_coords = top_left_coords
-        self.items_list = [PoorIronOre, IronOre]
+        self.items_list = [PoorIronOre, IronOre, IronIngot]
+        # TODO: может это должен быть dict?
         self.rows = []
 
         for item in self.items_list:
@@ -247,3 +297,52 @@ class BankTable:
         for row in self.rows:
             if row.item.slug == item_slug:
                 return row
+
+
+class PickaxeHitPointer(AnimatedObject):
+    def __init__(self):
+        self.sprites = [
+            get_scaled_image("sprites/hit_1.png", 4),
+            get_scaled_image("sprites/hit_2.png", 4),
+            get_scaled_image("sprites/hit_3.png", 4),
+        ]
+        self.animation_count = 0
+        self.animation_duration_per_sprite = 4
+        self.rect = self.sprites[0].get_rect()
+        self.current_sprite_index = None
+        self.max_index = len(self.sprites)
+
+    def start(self, center_coords):
+        self.set_next_sprite()
+        self.move(center_coords)
+
+    def add_animation_count(self):
+        self.animation_count += 1
+        if self.animation_count == self.animation_duration_per_sprite:
+            self.animation_count = 0
+            self.set_next_sprite()
+
+    def set_next_sprite(self):
+        if self.current_sprite_index is None:
+            self.current_sprite_index = 0
+        elif self.current_sprite_index == self.max_index - 1:
+            self.current_sprite_index = None
+        else:
+            self.current_sprite_index += 1
+
+    def move(self, center_coords):
+        self.rect.center = center_coords
+
+    def draw(self, surface):
+        if self.show:
+            surface.blit(self.sprite, self.rect)
+
+    @property
+    def sprite(self):
+        if self.current_sprite_index is None:
+            return None
+        return self.sprites[self.current_sprite_index]
+
+    @property
+    def show(self):
+        return self.current_sprite_index is not None
