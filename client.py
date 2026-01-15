@@ -1,8 +1,8 @@
 import pygame
 
 from action import ActionManager
-from conts import TICKS_PER_SECOND
-from display import DisplayManager
+from display.consts import TICKS_PER_SECOND
+from display.manager import DisplayManager
 
 pygame.init()
 

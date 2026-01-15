@@ -2,7 +2,7 @@ import random
 
 import pygame
 
-from display import Button
+from display.manager import Button
 from items import IronIngot
 
 
@@ -54,16 +54,37 @@ class ActionManager:
 
         if self.display_manager.page == self.display_manager.MINING_PAGE:
             if obj == self.display_manager.middle_screen_background_image:
+                # ПЕРВЫЙ ЭТАП
+                # Запуск анимации кирки
+                # Определение места попадания
+                # Проверка коллизии с кружочками
+                #
+                # ВТОРОЙ ЭТАП
+                # Отрисовка кружочка
+                # Вычисление дропа
+                # Добавление дропа в банк
+                # Вывод текста с дропом
+
                 self.display_manager.mining_middle_screen.do_pickaxe_hit()
 
-                dropped_item = DropChanceManager().get_drop()
+                # убрать в отдельный метод
+                unlucky_drop = False
+                mouse_pos = pygame.mouse.get_pos()
+                for hit_circle in self.display_manager.pickaxe_hit_circles:
+                    if hit_circle.rect.collidepoint(mouse_pos):
+                        pos_in_mask = mouse_pos[0] - hit_circle.rect.x, mouse_pos[1] - hit_circle.rect.y
+                        if hit_circle.mask.get_at(pos_in_mask):
+                            unlucky_drop = True
+                            print("UNLUCKY!")
+                            break
+
+                dropped_item = DropChanceManager().get_drop(unlucky_drop)
                 row = self.display_manager.bank_table.get_row(dropped_item)
                 dropped_quantity = 1
                 row.add_quantity(dropped_quantity)
 
+                self.display_manager.add_hit_circle(pygame.mouse.get_pos())
                 self.display_manager.highlight_text(str(row.item.highlight_text), pygame.mouse.get_pos())
-
-                self.display_manager.pickaxe_hit_pointer.start(pygame.mouse.get_pos())
 
         elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
             if obj == self.display_manager.crafting_middle_screen.crafting_recipe_image:
@@ -94,15 +115,18 @@ class SelectorUI:
 # TODO: заготовка :)
 class DropChanceManager:
     loot_table = {
-        "iron_ore": 7,
-        "poor_iron_ore": 93,
+        "iron_ore": 15,
+        "poor_iron_ore": 85,
     }
 
     def __init__(self):
         pass
 
-    def get_drop(self):
+    def get_drop(self, unlucky_drop):
         roll = random.randint(1, 100)
+        if unlucky_drop:
+            return "poor_iron_ore"
+
         if roll <= self.loot_table["iron_ore"]:
             return "iron_ore"
         return "poor_iron_ore"

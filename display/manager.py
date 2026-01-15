@@ -1,40 +1,8 @@
 import pygame
-from pygame.sprite import Sprite
 
-from conts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND
-from items import PoorIronOre, IronOre, IronIngot
-
-pygame.font.init()
-default_font = pygame.font.SysFont("serif", 30)
-
-
-def get_scaled_image(image, k = 1) -> pygame.surface.Surface:
-    """
-    Подгружает спрайт и увеличивает его размер в k раз.
-    """
-    image = pygame.image.load(image)
-
-    if image.get_alpha():
-        image = image.convert_alpha()
-    else:
-        image = image.convert()
-        image.set_colorkey(WHITE)
-
-    size = image.get_size()
-    return pygame.transform.scale(image, (int(size[0] * k), int(size[1] * k)))
-
-
-# TODO: как будто бы на хрен не нужен
-class AnimatedObject:
-    """
-    Абстрактный класс для определения общих методов и их сигнатур
-    """
-
-    def add_animation_count(self):
-        raise NotImplementedError
-
-    def draw(self, surface):
-        raise NotImplementedError
+from display.bank import BankTable
+from display.consts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND, DEFAULT_FONT
+from display.helpers import get_scaled_image, AnimatedObject, CommonSprite
 
 
 class DisplayManager:
@@ -57,8 +25,10 @@ class DisplayManager:
         # mining
         self.mining_middle_screen = MiningMiddleScreen()
         self.highlight_text_objects = []
-        self.pickaxe_hit_pointer = PickaxeHitPointer()
+        # self.pickaxe_hit_pointer = PickaxeHitPointer()
+        self.pickaxe_hit_circles = []
 
+        # crafting
         self.crafting_middle_screen = CraftingMiddleScreen()
 
         # банк/инвентарь
@@ -99,11 +69,6 @@ class DisplayManager:
     def render_all(self):
         self.main_surface.fill((0, 0, 0))
 
-        # self.render_common_ui()
-
-        # for obj in self.buttons:
-        #     obj.draw(self.main_surface)
-
         if self.page == self.MINING_PAGE:
             self.mining_middle_screen.draw(self.main_surface)
 
@@ -115,7 +80,9 @@ class DisplayManager:
                 else:
                     self.highlight_text_objects.remove(obj)
 
-            self.pickaxe_hit_pointer.draw(self.main_surface)
+            # self.pickaxe_hit_pointer.draw(self.main_surface)
+            for hit_circle in self.pickaxe_hit_circles:
+                hit_circle.draw(self.main_surface)
         elif self.page == self.CRAFTING_PAGE:
             self.crafting_middle_screen.draw(self.main_surface)
 
@@ -128,14 +95,20 @@ class DisplayManager:
 
     def get_animated_objects(self) -> list[AnimatedObject]:
         result = [self.mining_middle_screen] + self.highlight_text_objects
-        if self.pickaxe_hit_pointer.show:
-            result.append(self.pickaxe_hit_pointer)
+        # if self.pickaxe_hit_pointer.show:
+        #     result.append(self.pickaxe_hit_pointer)
         return result
 
     def add_animation_count(self):
         # TODO: каждый раз вычислять get_animated_objects это неоптимально
         for obj in self.get_animated_objects():
             obj.add_animation_count()
+
+    def add_hit_circle(self, center_coords):
+        """
+        Мне не очень нравится этот метод, т.к. ему не место в этом классе
+        """
+        self.pickaxe_hit_circles.append(HitCircle(center_coords))
 
 
 class Button(pygame.sprite.Sprite):
@@ -148,7 +121,7 @@ class Button(pygame.sprite.Sprite):
     ):
         super().__init__()
         self.name = name
-        self.image_on = image_on  # TODO: rename -> image_on
+        self.image_on = image_on
         self.image_off = image_off
 
         self.on = on
@@ -164,15 +137,6 @@ class Button(pygame.sprite.Sprite):
             self.image = self.image_on
         else:
             self.image = self.image_off
-
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)
-
-
-class CommonSprite:
-    def __init__(self, image):
-        self.image = image
-        self.rect = image.get_rect()
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
@@ -228,7 +192,7 @@ class LiftingText(AnimatedObject):
 
     def __init__(self, text, coords: tuple):
         self.text = text
-        self.image = default_font.render(text, True, WHITE)
+        self.image = DEFAULT_FONT.render(text, True, WHITE)
         self.rect = self.image.get_rect()
         self.rect.center = coords
         self.show = True
@@ -249,100 +213,19 @@ class LiftingText(AnimatedObject):
             self.show = False
 
 
-class ObjectRowIconAndText:
-    def __init__(self, item, bottom_left_coords):
-        self.item = item
-        self.icon = get_scaled_image(item.image_url)
-        self.icon_rect = self.icon.get_rect()
-        self.icon_rect.bottomleft = bottom_left_coords
-
-        self.quantity = 0
-
-        self.text_image = default_font.render("x0", True, WHITE)
-        self.text_rect = self.text_image.get_rect()
-        self.text_rect.bottomleft = (self.icon_rect.bottomleft[0] + 30, self.icon_rect.bottomleft[1])
-
-    def draw(self, surface):
-        surface.blit(self.icon, self.icon_rect)
-        surface.blit(self.text_image, self.text_rect)
-
-    def add_quantity(self, quantity):
-        self.quantity += quantity
-        text_rect = self.text_rect
-        self.text_image = default_font.render("x" + str(self.quantity), True, WHITE)
-        self.text_rect = text_rect
-
-    def __repr__(self):
-        return self.item.slug
-
-
-class BankTable:
-    space_between_rows_px = 30
-
-    def __init__(self, top_left_coords):
-        self.top_left_coords = top_left_coords
-        self.items_list = [PoorIronOre, IronOre, IronIngot]
-        # TODO: может это должен быть dict?
-        self.rows = []
-
-        for item in self.items_list:
-            self.top_left_coords = (self.top_left_coords[0], self.top_left_coords[1] + self.space_between_rows_px)
-            self.rows.append(ObjectRowIconAndText(item, self.top_left_coords))
-
-    def draw(self, surface):
-        for row in self.rows:
-            row.draw(surface)
-
-    def get_row(self, item_slug: str) -> ObjectRowIconAndText:
-        for row in self.rows:
-            if row.item.slug == item_slug:
-                return row
-
-
-class PickaxeHitPointer(AnimatedObject):
-    def __init__(self):
-        self.sprites = [
-            get_scaled_image("sprites/hit_1.png", 4),
-            get_scaled_image("sprites/hit_2.png", 4),
-            get_scaled_image("sprites/hit_3.png", 4),
-        ]
-        self.animation_count = 0
-        self.animation_duration_per_sprite = 4
-        self.rect = self.sprites[0].get_rect()
-        self.current_sprite_index = None
-        self.max_index = len(self.sprites)
-
-    def start(self, center_coords):
-        self.set_next_sprite()
-        self.move(center_coords)
-
-    def add_animation_count(self):
-        self.animation_count += 1
-        if self.animation_count == self.animation_duration_per_sprite:
-            self.animation_count = 0
-            self.set_next_sprite()
-
-    def set_next_sprite(self):
-        if self.current_sprite_index is None:
-            self.current_sprite_index = 0
-        elif self.current_sprite_index == self.max_index - 1:
-            self.current_sprite_index = None
-        else:
-            self.current_sprite_index += 1
-
-    def move(self, center_coords):
+class HitCircle:
+    def __init__(self, center_coords):
+        self.image = get_scaled_image("sprites/hit_circle.png")
+        self.rect = self.image.get_rect()
         self.rect.center = center_coords
+        self.mask = pygame.mask.from_surface(self.image)
 
     def draw(self, surface):
-        if self.show:
-            surface.blit(self.sprite, self.rect)
+        """
+        Возможно придётся рисовать видимые кружки сверху, а невидимые за фоном,
+        чтобы можно было проверять на коллизии
+        """
+        surface.blit(self.image, self.rect)
 
-    @property
-    def sprite(self):
-        if self.current_sprite_index is None:
-            return None
-        return self.sprites[self.current_sprite_index]
 
-    @property
-    def show(self):
-        return self.current_sprite_index is not None
+# TODO: что есть sprite, а что есть image?

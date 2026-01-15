@@ -1,5 +1,10 @@
+import pygame
+
 TICKS_PER_SECOND = 30
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 
 WHITE = (255, 255, 255)
+
+pygame.font.init()
+DEFAULT_FONT = pygame.font.SysFont("serif", 30)
