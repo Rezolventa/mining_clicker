@@ -12,6 +12,7 @@ class DisplayManager:
 
     def __init__(self):
         self.main_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
         self.page = self.MINING_PAGE
 
         # TODO: этот CommonSprite на хрен не нужен, лучше в draw напрямую указывать координаты, т.к. это статика
@@ -25,7 +26,6 @@ class DisplayManager:
         # mining
         self.mining_middle_screen = MiningMiddleScreen()
         self.highlight_text_objects = []
-        # self.pickaxe_hit_pointer = PickaxeHitPointer()
         self.pickaxe_hit_circles = []
 
         # crafting
@@ -80,7 +80,6 @@ class DisplayManager:
                 else:
                     self.highlight_text_objects.remove(obj)
 
-            # self.pickaxe_hit_pointer.draw(self.main_surface)
             for hit_circle in self.pickaxe_hit_circles:
                 hit_circle.draw(self.main_surface)
         elif self.page == self.CRAFTING_PAGE:
@@ -95,8 +94,6 @@ class DisplayManager:
 
     def get_animated_objects(self) -> list[AnimatedObject]:
         result = [self.mining_middle_screen] + self.highlight_text_objects
-        # if self.pickaxe_hit_pointer.show:
-        #     result.append(self.pickaxe_hit_pointer)
         return result
 
     def add_animation_count(self):
@@ -144,9 +141,6 @@ class Button(pygame.sprite.Sprite):
 
 class MiningMiddleScreen(AnimatedObject):
     def __init__(self):
-        # self.background_image = get_scaled_image("sprites/middle_screen.png", 4)
-        # self.rect = self.background_image.get_rect()
-        # self.rect.topleft = (236, 0)
         self.middle_screen_background_image = get_scaled_image("sprites/mining_background.png", 4)
 
         self.ore_image = get_scaled_image("sprites/ore.png", 16)
@@ -173,7 +167,6 @@ class MiningMiddleScreen(AnimatedObject):
 
     def draw(self, surface):
         surface.blit(self.middle_screen_background_image, (236, 0))
-        # surface.blit(self.ore_image, (400, 250))
         surface.blit(self.pickaxe_image, (500, 250))
 
 
@@ -226,6 +219,3 @@ class HitCircle:
         чтобы можно было проверять на коллизии
         """
         surface.blit(self.image, self.rect)
-
-
-# TODO: что есть sprite, а что есть image?

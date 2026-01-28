@@ -75,7 +75,6 @@ class ActionManager:
                         pos_in_mask = mouse_pos[0] - hit_circle.rect.x, mouse_pos[1] - hit_circle.rect.y
                         if hit_circle.mask.get_at(pos_in_mask):
                             unlucky_drop = True
-                            print("UNLUCKY!")
                             break
 
                 dropped_item = DropChanceManager().get_drop(unlucky_drop)
