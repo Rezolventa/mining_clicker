@@ -39,3 +39,16 @@ class CommonSprite:
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
+
+
+import random
+import math
+
+def get_random_point_in_circle(center_x, center_y, radius):
+    angle = random.uniform(0, 2 * math.pi)
+    distance = math.sqrt(random.uniform(0, 1)) * radius
+
+    x = center_x + distance * math.cos(angle)
+    y = center_y + distance * math.sin(angle)
+
+    return x, y

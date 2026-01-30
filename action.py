@@ -2,6 +2,7 @@ import random
 
 import pygame
 
+from display.helpers import get_random_point_in_circle
 from display.manager import Button
 from items import IronIngot
 
@@ -82,7 +83,12 @@ class ActionManager:
                 dropped_quantity = 1
                 row.add_quantity(dropped_quantity)
 
-                self.display_manager.add_hit_circle(pygame.mouse.get_pos())
+                random_coords = get_random_point_in_circle(
+                    pygame.mouse.get_pos()[0],
+                    pygame.mouse.get_pos()[1],
+                    15,
+                )
+                self.display_manager.add_hit_circle(random_coords)
                 self.display_manager.highlight_text(str(row.item.highlight_text), pygame.mouse.get_pos())
 
         elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
