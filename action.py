@@ -19,6 +19,7 @@ class ActionManager:
 
         # текущий основной экран
         self.middle_screen = self.display_manager.mining_middle_screen
+        self.pickaxe = self.display_manager.pickaxe
 
     def get_hovered_object(self):
         """
@@ -41,7 +42,7 @@ class ActionManager:
         """
         Обрабатывает ежефреймные события
         """
-        self.middle_screen.add_animation_count()
+        self.pickaxe.add_animation_count()
         self.display_manager.add_animation_count()
 
     def handle_mouse_click(self):
@@ -66,7 +67,7 @@ class ActionManager:
                 # Добавление дропа в банк
                 # Вывод текста с дропом
 
-                self.display_manager.mining_middle_screen.do_pickaxe_hit()
+                self.display_manager.pickaxe.do_pickaxe_hit()
 
                 # убрать в отдельный метод
                 unlucky_drop = False

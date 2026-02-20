@@ -1,4 +1,5 @@
 import pygame
+from pygame import Surface
 
 from display.bank import BankTable
 from display.consts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND, DEFAULT_FONT
@@ -25,6 +26,7 @@ class DisplayManager:
         # основной экран
         # mining
         self.mining_middle_screen = MiningMiddleScreen()
+        self.pickaxe = PickaxeHit()
         self.highlight_text_objects = []
         self.pickaxe_hit_circles = []
 
@@ -71,6 +73,7 @@ class DisplayManager:
 
         if self.page == self.MINING_PAGE:
             self.mining_middle_screen.draw(self.main_surface)
+            self.pickaxe.draw(self.main_surface)
 
             # если использовать self.highlight_text_objects, возникает баг отображения при удалении элемента "на лету"
             temp_list = self.highlight_text_objects.copy()
@@ -93,7 +96,7 @@ class DisplayManager:
         self.highlight_text_objects.append(LiftingText(f"+1 {item_name}", coords))
 
     def get_animated_objects(self) -> list[AnimatedObject]:
-        result = [self.mining_middle_screen] + self.highlight_text_objects
+        result = [self.pickaxe] + self.highlight_text_objects
         return result
 
     def add_animation_count(self):
@@ -139,35 +142,57 @@ class Button(pygame.sprite.Sprite):
         surface.blit(self.image, self.rect)
 
 
-class MiningMiddleScreen(AnimatedObject):
+class MiningMiddleScreen:
     def __init__(self):
         self.middle_screen_background_image = get_scaled_image("sprites/mining_background.png", 4)
 
-        self.ore_image = get_scaled_image("sprites/ore.png", 16)
-        self.pickaxe_idle_image = get_scaled_image("sprites/pickaxe.png", 12)
-        self.pickaxe_hit_image = get_scaled_image("sprites/pickaxe_hit.png", 12)
-
-        self.animation_count = 0
-        self.animation_count_limit = 5
-
-        self.pickaxe_hit = False
-        self.pickaxe_image = self.pickaxe_idle_image
-
-    def do_pickaxe_hit(self):
-        self.pickaxe_hit = True
-        self.animation_count = 0
-        self.pickaxe_image = self.pickaxe_hit_image
-
-    def add_animation_count(self):
-        self.animation_count += 1
-        if self.animation_count == self.animation_count_limit:
-            self.animation_count = 0
-            self.pickaxe_hit = False
-            self.pickaxe_image = self.pickaxe_idle_image
-
     def draw(self, surface):
         surface.blit(self.middle_screen_background_image, (236, 0))
-        surface.blit(self.pickaxe_image, (500, 250))
+
+
+class StopDrawSingleton:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls, *args, **kwargs)
+        return cls._instance
+
+
+stop_draw = StopDrawSingleton()
+
+
+class PickaxeHit(AnimatedObject):
+    def __init__(self):
+        self.pickaxe_idle_image = get_scaled_image("sprites/pickaxe.png", 2)
+        self.pickaxe_hit_image = get_scaled_image("sprites/pickaxe_hit.png", 2)
+
+        self.animation_count = 0
+
+        self.frame_image = {
+            0: self.pickaxe_idle_image,
+            12: self.pickaxe_hit_image,
+            27: self.pickaxe_idle_image,
+            39: stop_draw,
+        }
+
+        self.image = self.pickaxe_idle_image
+
+    def add_animation_count(self):
+        if image := self.frame_image.get(self.animation_count):
+            self.image = image
+        self.animation_count += 1
+
+    def draw(self, surface):
+        if self.image is stop_draw:
+            return
+
+        rect = self.image.get_rect()
+        rect.bottomleft = pygame.mouse.get_pos()
+        surface.blit(self.image, rect)
+
+    def do_pickaxe_hit(self):
+        self.animation_count = 0
 
 
 class CraftingMiddleScreen(AnimatedObject):

@@ -1,7 +1,5 @@
 import pygame
 
-from display.helpers import get_scaled_image
-
 
 class Cursor:
     cursor_surface = None
