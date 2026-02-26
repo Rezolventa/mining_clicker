@@ -1,7 +1,7 @@
 import pygame
 
-from action import ActionManager
-from display.consts import TICKS_PER_SECOND
+from action import ActionManager, TimeManager
+from consts import TICKS_PER_SECOND
 from display.cursor import my_set_cursor, MINING_CIRCLE_CURSOR, ARROW_CURSOR
 from display.manager import DisplayManager
 
@@ -12,6 +12,7 @@ class MainController:
     def __init__(self):
         self.display_manager = DisplayManager()
         self.action_manager = ActionManager(self)
+        self.time_manager = TimeManager()
 
 
 def main():
@@ -37,11 +38,17 @@ def main():
         else:
             my_set_cursor(ARROW_CURSOR)
 
+        # часы
+        if main_controller.time_manager.tick == 0:
+            hour = main_controller.time_manager.hour
+            day = main_controller.time_manager.day
+            main_controller.display_manager.clock.update_text(day, hour)
 
+        main_controller.time_manager.handle_routine()
         main_controller.action_manager.handle_routine()
         main_controller.display_manager.render_all()
         pygame.display.flip()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

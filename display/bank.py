@@ -1,4 +1,4 @@
-from display.consts import WHITE, DEFAULT_FONT
+from consts import WHITE, DEFAULT_FONT
 from display.helpers import get_scaled_image
 from items import PoorIronOre, IronOre, IronIngot
 

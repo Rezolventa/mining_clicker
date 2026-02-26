@@ -1,6 +1,6 @@
 import pygame
 
-from display.consts import WHITE
+from consts import WHITE
 
 
 def get_scaled_image(image, k = 1) -> pygame.surface.Surface:

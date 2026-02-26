@@ -20,7 +20,7 @@ class ArrowCursor(Cursor):
 
 
 class MiningCircleCursor(Cursor):
-    cursor_surface = pygame.image.load('sprites/crosshair.png')
+    cursor_surface = pygame.image.load("sprites/crosshair.png")
     hotspot = (16, 16)
 
     def __init__(self):

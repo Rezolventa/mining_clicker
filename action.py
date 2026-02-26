@@ -2,6 +2,7 @@ import random
 
 import pygame
 
+from consts import TICKS_PER_SECOND
 from display.helpers import get_random_point_in_circle
 from display.manager import Button
 from items import IronIngot
@@ -136,3 +137,21 @@ class DropChanceManager:
         if roll <= self.loot_table["iron_ore"]:
             return "iron_ore"
         return "poor_iron_ore"
+
+
+class TimeManager:
+    def __init__(self):
+        self.ticks_per_game_hour = TICKS_PER_SECOND * 3
+        self.hour = 0
+        self.day = 1
+        self.tick = 0
+
+    def handle_routine(self):
+        self.tick += 1
+        if self.tick == self.ticks_per_game_hour:
+            self.hour += 1
+            self.tick = 0
+
+        if self.hour == 24:
+            self.day += 1
+            self.hour = 0

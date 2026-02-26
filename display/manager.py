@@ -1,8 +1,7 @@
 import pygame
-from pygame import Surface
 
 from display.bank import BankTable
-from display.consts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND, DEFAULT_FONT
+from consts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND, DEFAULT_FONT
 from display.helpers import get_scaled_image, AnimatedObject, CommonSprite
 
 
@@ -33,8 +32,9 @@ class DisplayManager:
         # crafting
         self.crafting_middle_screen = CraftingMiddleScreen()
 
-        # банк/инвентарь
+        # банк/инвентарь (правая панель)
         self.bank_table = BankTable((1000, 400))
+        self.clock = Clock((900, 50))
 
     def init_panel_buttons(self):
         mining_button = Button(
@@ -71,6 +71,10 @@ class DisplayManager:
     def render_all(self):
         self.main_surface.fill((0, 0, 0))
 
+        # главная панель
+        self.render_common_ui()
+
+        # основной экран
         if self.page == self.MINING_PAGE:
             self.mining_middle_screen.draw(self.main_surface)
             self.pickaxe.draw(self.main_surface)
@@ -88,9 +92,9 @@ class DisplayManager:
         elif self.page == self.CRAFTING_PAGE:
             self.crafting_middle_screen.draw(self.main_surface)
 
-        self.render_common_ui()
-
+        # банк/инвентарь (правая панель)
         self.bank_table.draw(self.main_surface)
+        self.clock.draw(self.main_surface)
 
     def highlight_text(self, item_name, coords):
         self.highlight_text_objects.append(LiftingText(f"+1 {item_name}", coords))
@@ -164,6 +168,9 @@ stop_draw = StopDrawSingleton()
 
 class PickaxeHit(AnimatedObject):
     def __init__(self):
+        """
+        Эталонный класс с анимацией и остановкой анимации
+        """
         self.pickaxe_idle_image = get_scaled_image("sprites/pickaxe.png", 2)
         self.pickaxe_hit_image = get_scaled_image("sprites/pickaxe_hit.png", 2)
 
@@ -244,3 +251,32 @@ class HitCircle:
         чтобы можно было проверять на коллизии
         """
         surface.blit(self.image, self.rect)
+
+
+class Clock:
+    # animation_speed = 3
+    # time_to_live_seconds = 2
+
+    def __init__(self, coords: tuple):
+        self.image = DEFAULT_FONT.render("DAY: 0  ---  0:00", True, WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.topleft = coords
+        self.show = True
+        # self.animation_count = 0
+
+    def draw(self, surface):
+        # x = self.rect.topleft[0]
+        # y = self.rect.topleft[1]
+        # self.rect.topleft = (x, y - 1)
+        surface.blit(self.image, self.rect)
+
+    # def add_animation_count(self):
+    #     ticks_to_live = self.time_to_live_seconds * TICKS_PER_SECOND
+    #     self.animation_count += 1
+    #     if self.animation_count == ticks_to_live:
+    #         self.animation_count = 0
+    #         self.show = False
+
+    def update_text(self, day, hour):
+        text = f"DAY: {day}  ---  {hour}:00"
+        self.image = DEFAULT_FONT.render(text, True, WHITE)
