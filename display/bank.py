@@ -1,12 +1,13 @@
 from consts import WHITE, DEFAULT_FONT
 from display.helpers import get_scaled_image
-from items import PoorIronOre, IronOre, IronIngot
+from items import PoorIronOre, IronOre, IronIngot, Coal, SilverOre, GoldenOre, LavaOre, SilverIngot, GoldenIngot, \
+    LavaIngot
 
 
 class ObjectRowIconAndText:
     def __init__(self, item, bottom_left_coords):
         self.item = item
-        self.icon = get_scaled_image(item.image_url)
+        self.icon = get_scaled_image(item.image_url, item.scale)
         self.icon_rect = self.icon.get_rect()
         self.icon_rect.bottomleft = bottom_left_coords
 
@@ -30,24 +31,54 @@ class ObjectRowIconAndText:
         return self.item.slug
 
 
-class BankTable:
-    space_between_rows_px = 30
+class ItemTable:
+    space_between_rows_px = None
+    space_between_columns_px = None
+    item_table = None
 
-    def __init__(self, top_left_coords):
-        self.top_left_coords = top_left_coords
-        self.items_list = [PoorIronOre, IronOre, IronIngot]
-        # TODO: может это должен быть dict?
-        self.rows = []
+    def __init__(self, initial_top_left_coords):
+        self.top_left_coords = initial_top_left_coords
+        self.display_table = []
 
-        for item in self.items_list:
-            self.top_left_coords = (self.top_left_coords[0], self.top_left_coords[1] + self.space_between_rows_px)
-            self.rows.append(ObjectRowIconAndText(item, self.top_left_coords))
+        for item_list in self.item_table:
+            column = []
+            for item in item_list:
+                self.top_left_coords = (self.top_left_coords[0], self.top_left_coords[1] + self.space_between_rows_px)
+                column.append(ObjectRowIconAndText(item, self.top_left_coords))
+            self.display_table.append(column)
+
+            # переходим на следующий столбец
+            self.top_left_coords = (
+                initial_top_left_coords[0] + self.space_between_columns_px, initial_top_left_coords[1]
+            )
 
     def draw(self, surface):
-        for row in self.rows:
-            row.draw(surface)
+        for column in self.display_table:
+            for row in column:
+                if row.quantity > 0:
+                    row.draw(surface)
 
+    # не используется?
     def get_row(self, item_slug: str) -> ObjectRowIconAndText:
-        for row in self.rows:
-            if row.item.slug == item_slug:
-                return row
+        for column in self.display_table:
+            for row in column:
+                if row.item.slug == item_slug:
+                    return row
+
+
+class Bank(ItemTable):
+    space_between_rows_px = 30
+    space_between_columns_px = 100
+    item_table = [
+        [PoorIronOre, IronOre, Coal, SilverOre, GoldenOre, LavaOre],
+        [IronIngot, Coal, SilverIngot, GoldenIngot, LavaIngot],
+    ]
+
+
+class Inventory(ItemTable):
+    space_between_rows_px = 30
+    space_between_columns_px = 100
+    item_table = [
+        [PoorIronOre, IronOre, Coal, SilverOre, GoldenOre, LavaOre],
+        [IronIngot, Coal, SilverIngot, GoldenIngot, LavaIngot],
+    ]

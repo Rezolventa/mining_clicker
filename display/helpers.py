@@ -32,6 +32,39 @@ class AnimatedObject:
         raise NotImplementedError
 
 
+class StopDrawSingleton:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls, *args, **kwargs)
+        return cls._instance
+
+
+stop_draw = StopDrawSingleton()
+
+
+class AnimatedObjectV2:
+    """
+    Абстрактный класс для определения общих методов и их сигнатур.
+    """
+    frame_image = None
+    animation_count = None
+    image = None
+    rect = None
+
+    def add_animation_count(self):
+        if image := self.frame_image.get(self.animation_count):
+            self.image = image
+        self.animation_count += 1
+
+    def draw(self, surface):
+        if self.image is stop_draw:
+            return
+
+        surface.blit(self.image, self.rect)
+
+
 class CommonSprite:
     def __init__(self, image):
         self.image = image

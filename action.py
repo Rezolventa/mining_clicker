@@ -7,13 +7,18 @@ from display.helpers import get_random_point_in_circle
 from display.manager import Button
 from items import IronIngot
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from client import MainController
+
 
 class ActionManager:
     """
     Обработчик всяких разных событий на клиенте
     """
 
-    def __init__(self, main_controller):
+    def __init__(self, main_controller: "MainController"):
         self.main_controller = main_controller
         self.display_manager = main_controller.display_manager
         self.panel = SelectorUI(self.display_manager.buttons)
@@ -21,6 +26,8 @@ class ActionManager:
         # текущий основной экран
         self.middle_screen = self.display_manager.mining_middle_screen
         self.pickaxe = self.display_manager.pickaxe
+
+        self.alarms = []
 
     def get_hovered_object(self):
         """
@@ -33,6 +40,8 @@ class ActionManager:
         if self.display_manager.page == self.display_manager.MINING_PAGE:
             if self.display_manager.middle_screen_background_image.rect.collidepoint(pygame.mouse.get_pos()):
                 return self.display_manager.middle_screen_background_image
+            if self.display_manager.end_run_button.rect.collidepoint(pygame.mouse.get_pos()):
+                return self.display_manager.end_run_button
         elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
             if self.display_manager.crafting_middle_screen.crafting_recipe_image.rect.collidepoint(pygame.mouse.get_pos()):
                 return self.display_manager.crafting_middle_screen.crafting_recipe_image
@@ -43,8 +52,14 @@ class ActionManager:
         """
         Обрабатывает ежефреймные события
         """
-        self.pickaxe.add_animation_count()
         self.display_manager.add_animation_count()
+        for alarm in self.alarms:
+            alarm.handle_routine()
+            if alarm.event == "end_run_screen" and alarm.went_off:
+                craft_button = self.panel.buttons[1]
+                self.panel.set_active_button(craft_button)
+                self.display_manager.page = str(craft_button).split("_")[0]
+                self.alarms.remove(alarm)
 
     def handle_mouse_click(self):
         """
@@ -57,9 +72,10 @@ class ActionManager:
 
         if self.display_manager.page == self.display_manager.MINING_PAGE:
             if obj == self.display_manager.middle_screen_background_image:
+                # TODO: sprite_queue, 2 x layers
                 # ПЕРВЫЙ ЭТАП
-                # Запуск анимации кирки
                 # Определение места попадания
+                # Запуск анимации кирки
                 # Проверка коллизии с кружочками
                 #
                 # ВТОРОЙ ЭТАП
@@ -68,9 +84,7 @@ class ActionManager:
                 # Добавление дропа в банк
                 # Вывод текста с дропом
 
-                self.display_manager.pickaxe.do_pickaxe_hit()
-
-                # убрать в отдельный метод
+                # TODO: убрать в отдельный метод hit_circle.on_click() или типа того
                 unlucky_drop = False
                 mouse_pos = pygame.mouse.get_pos()
                 for hit_circle in self.display_manager.pickaxe_hit_circles:
@@ -81,7 +95,7 @@ class ActionManager:
                             break
 
                 dropped_item = DropChanceManager().get_drop(unlucky_drop)
-                row = self.display_manager.bank_table.get_row(dropped_item)
+                row = self.display_manager.inventory_table.get_row(dropped_item)
                 dropped_quantity = 1
                 row.add_quantity(dropped_quantity)
 
@@ -91,7 +105,16 @@ class ActionManager:
                     15,
                 )
                 self.display_manager.add_hit_circle(random_coords)
+                self.display_manager.pickaxe.do_pickaxe_hit(random_coords)
                 self.display_manager.highlight_text(str(row.item.highlight_text), pygame.mouse.get_pos())
+            elif obj == self.display_manager.end_run_button:
+                end_run_screen_alarm = Alarm("end_run_screen", 50)
+                self.alarms.append(end_run_screen_alarm)
+                self.display_manager.run_end_run_screen()
+
+                # craft_button = self.panel.buttons[1]
+                # self.panel.set_active_button(craft_button)
+                # self.display_manager.page = str(craft_button).split("_")[0]
 
         elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
             if obj == self.display_manager.crafting_middle_screen.crafting_recipe_image:
@@ -155,3 +178,21 @@ class TimeManager:
         if self.hour == 24:
             self.day += 1
             self.hour = 0
+
+
+class Alarm:
+    def __init__(self, event, count):
+        self.event = event
+        self.count = count
+        # self.on = True
+
+    def handle_routine(self):
+        # if self.on:
+        self.count -= 1
+
+        # if self.count == 0:
+        #     self.on = False
+
+    @property
+    def went_off(self):
+        return self.count == 0
