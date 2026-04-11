@@ -1,6 +1,8 @@
+from typing import Type
+
 import pygame
 
-from display.bank import Bank, Inventory
+from display.bank import Bank, Inventory, merge_inventory_to_bank
 from consts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND, DEFAULT_FONT
 from display.helpers import get_scaled_image, AnimatedObject, CommonSprite, stop_draw, AnimatedObjectV2
 
@@ -22,13 +24,12 @@ class DisplayManager:
         # главная панель
         self.buttons = self.init_panel_buttons()
 
-        # основной экран
+        # Основной экран
         # mining
         self.mining_middle_screen = MiningMiddleScreen()
         self.pickaxe = PickaxeHit()
-        self.highlight_text_objects = []
+        self.highlight_text_objects: list[LiftingText] = []
         self.pickaxe_hit_circles = []
-        self.end_run_screen = EndRunScreen()
 
         # crafting
         self.crafting_middle_screen = CraftingMiddleScreen()
@@ -36,6 +37,10 @@ class DisplayManager:
         # банк/инвентарь (правая панель)
         self.inventory_table = Inventory((1000, 450))
         self.bank_table = Bank((1000, 450))
+
+        """    
+        Для MVP выход из рейда и время не делаем
+        self.end_run_screen = EndRunScreen()
         self.end_run_button = Button(
             "end_run_button",
             get_scaled_image("sprites/end_run_button.png", 2),
@@ -43,6 +48,7 @@ class DisplayManager:
         )
         self.end_run_button.rect.topleft = (950, 100)
         self.clock = Clock((900, 50))
+        """
 
     def init_panel_buttons(self):
         mining_button = Button(
@@ -78,62 +84,83 @@ class DisplayManager:
 
     def render_all(self):
         self.main_surface.fill((0, 0, 0))
-
-        # главная панель
         self.render_common_ui()
 
         # основной экран
         if self.page == self.MINING_PAGE:
-            self.mining_middle_screen.draw(self.main_surface)
-
-            # TODO: двойная проверка?
-            if self.pickaxe.image != stop_draw:
-                self.pickaxe.draw(self.main_surface)
-
-            # если использовать self.highlight_text_objects, возникает баг отображения при удалении элемента "на лету"
-            temp_list = self.highlight_text_objects.copy()
-            for obj in temp_list:
-                if obj.show:
-                    obj.draw(self.main_surface)
-                else:
-                    self.highlight_text_objects.remove(obj)
-
-            for hit_circle in self.pickaxe_hit_circles:
-                hit_circle.draw(self.main_surface)
-
-            # TODO: двойная проверка?
-            if self.end_run_screen.image != stop_draw:
-                self.end_run_screen.draw(self.main_surface)
+            self.render_mining_page()
         elif self.page == self.CRAFTING_PAGE:
-            self.crafting_middle_screen.draw(self.main_surface)
+            self.render_craft_page()
 
-        # банк/инвентарь (правая панель)
-        self.inventory_table.draw(self.main_surface)
-        self.bank_table.draw(self.main_surface)
+        self.render_right_panel()
+
+        """    
+        Для MVP выход из рейда и время не делаем
         self.end_run_button.draw(self.main_surface)
         self.clock.draw(self.main_surface)
+        """
+
+    def render_mining_page(self):
+        self.mining_middle_screen.draw(self.main_surface)
+        self.pickaxe.draw(self.main_surface)
+
+        # если использовать self.highlight_text_objects, возникает баг отображения при удалении элемента "на лету"
+        temp_list = self.highlight_text_objects.copy()
+        for obj in temp_list:
+            if obj.show:
+                obj.draw(self.main_surface)
+            else:
+                self.highlight_text_objects.remove(obj)
+
+        for hit_circle in self.pickaxe_hit_circles:
+            hit_circle.draw(self.main_surface)
+
+        """    
+        Для MVP выход из рейда и время не делаем
+        # TODO: двойная проверка?
+        if self.end_run_screen.image != stop_draw:
+            self.end_run_screen.draw(self.main_surface)
+        """
+
+    def render_craft_page(self):
+        self.crafting_middle_screen.draw(self.main_surface)
+
+    def render_vendor_page(self):
+        pass
+
+    def render_right_panel(self):
+        if self.page == self.MINING_PAGE:
+            self.inventory_table.draw(self.main_surface)
+        else:
+            self.bank_table.draw(self.main_surface)
 
     def highlight_text(self, item_name, coords):
         # TODO: вот же пример исчезающего объекта, надо сделать как тут
         self.highlight_text_objects.append(LiftingText(f"+1 {item_name}", coords))
 
-    def get_animated_objects(self) -> list[AnimatedObject]:
+    def get_animated_objects(self) -> list[Type[AnimatedObject]]:
+        """
+        Для MVP выход из рейда и время не делаем
         result = [self.pickaxe] + self.highlight_text_objects + [self.end_run_screen]
+        """
+
+        result = [self.pickaxe] + self.highlight_text_objects
         return result
 
     def add_animation_count(self):
-        # TODO: каждый раз вычислять get_animated_objects это неоптимально
+        # TODO: каждый раз вычислять get_animated_objects это не оптимально
         for obj in self.get_animated_objects():
             obj.add_animation_count()
 
     def add_hit_circle(self, center_coords):
-        """
-        Мне не очень нравится этот метод, т.к. ему не место в этом классе
-        """
         self.pickaxe_hit_circles.append(HitCircle(center_coords))
 
+    """    
+    Для MVP выход из рейда и время не делаем
     def run_end_run_screen(self):
         self.end_run_screen.start()
+        merge_inventory_to_bank(self.inventory_table, self.bank_table)
+    """
 
 
 class Button(pygame.sprite.Sprite):
@@ -144,8 +171,8 @@ class Button(pygame.sprite.Sprite):
         image_off,
         on: bool = False
     ):
-        super().__init__()  # TODO: надо?
-        self.name = name  # TODO: а это?
+        super().__init__()
+        self.name = name
         self.image_on = image_on
         self.image_off = image_off
 
@@ -169,11 +196,10 @@ class Button(pygame.sprite.Sprite):
 
 class MiningMiddleScreen:
     def __init__(self):
-        self.middle_screen_background_image = get_scaled_image("sprites/mining_background.png", 4)
+        self.middle_screen_background_image = get_scaled_image("sprites/mining_background_2.png", 2)
 
     def draw(self, surface):
-        surface.blit(self.middle_screen_background_image, (236, 0))
-
+        surface.blit(self.middle_screen_background_image, (241, 10))
 
 
 class PickaxeHit(AnimatedObjectV2):
@@ -190,7 +216,6 @@ class PickaxeHit(AnimatedObjectV2):
             0: self.pickaxe_idle_image,
             4: self.pickaxe_hit_image,
             7: stop_draw,
-            # 39: stop_draw,
         }
 
         self.rect = None
@@ -198,18 +223,7 @@ class PickaxeHit(AnimatedObjectV2):
         self.set_coords((0, 0))
         self.image = stop_draw
 
-    # def add_animation_count(self):
-    #     if image := self.frame_image.get(self.animation_count):
-    #         self.image = image
-    #     self.animation_count += 1
-    #
-    # def draw(self, surface):
-    #     if self.image is stop_draw:
-    #         return
-    #
-    #     surface.blit(self.image, self.rect)
-
-    def do_pickaxe_hit(self, coords):
+    def start(self, coords):
         self.animation_count = 0
         self.image = self.pickaxe_idle_image
         self.set_coords(coords)
@@ -315,33 +329,20 @@ class EndRunScreen(AnimatedObjectV2):
         self.image = self.end_run_screen_1
 
 
-# class DisplayQueue:
-#
-#     def __init__(self, background_layer, front_layer):
-#         self.background_layer = Layer(
-#
-#         )
-#         self.front_layer = Layer(
-#
-#         )
-#
-#     def draw(self, surface):
-#         surface.blit(self.image, self.rect)
-#
-#     def add_sprite(self):
-#         pass
-#
-#     def remove_sprite(self):
-#         pass
-#
-#
-# class Layer:
-#     def __init__(self):
-#         pass
-#
-#     def add_sprite(self):
-#         pass
-#
-#     def remove_sprite(self):
-#         pass
+class SelectorUI:
+    """
+    Из всех элементов активен может быть только один.
+    """
+    def __init__(self, buttons: list[Button]):
+        self.buttons = buttons
+        self.active_button = None
 
+    def set_active_button(self, new_active_button: Button) -> None:
+        for button in self.buttons:
+            if button == new_active_button:
+                button.on = True
+            else:
+                button.on = False
+            button.update()
+
+        self.active_button = new_active_button

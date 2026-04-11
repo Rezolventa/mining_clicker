@@ -38,11 +38,14 @@ def main():
         else:
             my_set_cursor(ARROW_CURSOR)
 
+        """    
+        Для MVP выход из рейда и время не делаем
         # часы
         if main_controller.time_manager.tick == 0:
             hour = main_controller.time_manager.hour
             day = main_controller.time_manager.day
             main_controller.display_manager.clock.update_text(day, hour)
+        """
 
         main_controller.time_manager.handle_routine()
         main_controller.action_manager.handle_routine()

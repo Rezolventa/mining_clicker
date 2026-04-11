@@ -1,7 +1,7 @@
 from consts import WHITE, DEFAULT_FONT
 from display.helpers import get_scaled_image
 from items import PoorIronOre, IronOre, IronIngot, Coal, SilverOre, GoldenOre, LavaOre, SilverIngot, GoldenIngot, \
-    LavaIngot
+    LavaIngot, Item
 
 
 class ObjectRowIconAndText:
@@ -23,9 +23,11 @@ class ObjectRowIconAndText:
 
     def add_quantity(self, quantity):
         self.quantity += quantity
-        text_rect = self.text_rect
         self.text_image = DEFAULT_FONT.render("x" + str(self.quantity), True, WHITE)
-        self.text_rect = text_rect
+
+    def clear(self):
+        self.quantity = 0
+        self.text_image = DEFAULT_FONT.render("x0", True, WHITE)
 
     def __repr__(self):
         return self.item.slug
@@ -58,12 +60,20 @@ class ItemTable:
                 if row.quantity > 0:
                     row.draw(surface)
 
-    # не используется?
-    def get_row(self, item_slug: str) -> ObjectRowIconAndText:
+    def get_row(self, item: Item) -> ObjectRowIconAndText:
         for column in self.display_table:
             for row in column:
-                if row.item.slug == item_slug:
+                if row.item == item:
                     return row
+
+    def clear(self):
+        for column in self.display_table:
+            for row in column:
+                row.clear()
+
+    def add_drop(self, dropped_item, dropped_quantity):
+        row = self.get_row(dropped_item)
+        row.add_quantity(dropped_quantity)
 
 
 class Bank(ItemTable):
@@ -71,7 +81,7 @@ class Bank(ItemTable):
     space_between_columns_px = 100
     item_table = [
         [PoorIronOre, IronOre, Coal, SilverOre, GoldenOre, LavaOre],
-        [IronIngot, Coal, SilverIngot, GoldenIngot, LavaIngot],
+        [IronIngot, SilverIngot, GoldenIngot, LavaIngot],
     ]
 
 
@@ -80,5 +90,12 @@ class Inventory(ItemTable):
     space_between_columns_px = 100
     item_table = [
         [PoorIronOre, IronOre, Coal, SilverOre, GoldenOre, LavaOre],
-        [IronIngot, Coal, SilverIngot, GoldenIngot, LavaIngot],
+        [IronIngot, SilverIngot, GoldenIngot, LavaIngot],
     ]
+
+
+def merge_inventory_to_bank(inventory: ItemTable, bank: ItemTable) -> None:
+    for column in inventory.display_table:
+        for row in column:
+            bank_row = bank.get_row(row.item)
+            bank_row.add_quantity(row.quantity)

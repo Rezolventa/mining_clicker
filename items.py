@@ -4,6 +4,7 @@ class Item:
     name = None
     slug = None
     image_url = None
+    highlight_text = None
     scale = 1
     order_number = 0
 

@@ -3,11 +3,12 @@ import random
 import pygame
 
 from consts import TICKS_PER_SECOND
+from display.bank import merge_inventory_to_bank
 from display.helpers import get_random_point_in_circle
-from display.manager import Button
-from items import IronIngot
+from display.manager import SelectorUI
+from items import IronIngot, Item, PoorIronOre, IronOre
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 
 if TYPE_CHECKING:
     from client import MainController
@@ -27,7 +28,7 @@ class ActionManager:
         self.middle_screen = self.display_manager.mining_middle_screen
         self.pickaxe = self.display_manager.pickaxe
 
-        self.alarms = []
+        self.alarms: list[Alarm] = []
 
     def get_hovered_object(self):
         """
@@ -40,8 +41,13 @@ class ActionManager:
         if self.display_manager.page == self.display_manager.MINING_PAGE:
             if self.display_manager.middle_screen_background_image.rect.collidepoint(pygame.mouse.get_pos()):
                 return self.display_manager.middle_screen_background_image
+
+            """    
+            Для MVP выход из рейда и время не делаем
             if self.display_manager.end_run_button.rect.collidepoint(pygame.mouse.get_pos()):
                 return self.display_manager.end_run_button
+            """
+
         elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
             if self.display_manager.crafting_middle_screen.crafting_recipe_image.rect.collidepoint(pygame.mouse.get_pos()):
                 return self.display_manager.crafting_middle_screen.crafting_recipe_image
@@ -53,13 +59,64 @@ class ActionManager:
         Обрабатывает ежефреймные события
         """
         self.display_manager.add_animation_count()
+        self.handle_alarms()
+
+    def handle_alarms(self):
         for alarm in self.alarms:
             alarm.handle_routine()
-            if alarm.event == "end_run_screen" and alarm.went_off:
+
+            """    
+            Для MVP выход из рейда и время не делаем
+            if alarm.went_off and alarm.event == "end_run_screen":
+                # сработал будильник - переключаем на вкладку Craft
                 craft_button = self.panel.buttons[1]
                 self.panel.set_active_button(craft_button)
                 self.display_manager.page = str(craft_button).split("_")[0]
                 self.alarms.remove(alarm)
+            """
+
+    def is_unlucky(self):
+        unlucky_drop = False
+        mouse_pos = pygame.mouse.get_pos()
+        for hit_circle in self.display_manager.pickaxe_hit_circles:
+            if hit_circle.rect.collidepoint(mouse_pos):
+                pos_in_mask = mouse_pos[0] - hit_circle.rect.x, mouse_pos[1] - hit_circle.rect.y
+                if hit_circle.mask.get_at(pos_in_mask):
+                    unlucky_drop = True
+                    break
+        return unlucky_drop
+
+    def do_pickaxe_hit(self):
+        """
+        ПЕРВЫЙ ЭТАП
+        Определение места попадания
+        Запуск анимации кирки
+        Проверка коллизии с кружочками
+
+        ВТОРОЙ ЭТАП
+        Отрисовка кружочка
+        Вычисление дропа
+        Добавление дропа в банк
+        Вывод текста с дропом
+        """
+        dropped_item = self.add_drop()
+
+        random_coords = get_random_point_in_circle(
+            pygame.mouse.get_pos()[0],
+            pygame.mouse.get_pos()[1],
+            15,
+        )
+        self.display_manager.add_hit_circle(random_coords)
+        self.display_manager.pickaxe.start(random_coords)
+        self.display_manager.highlight_text(str(dropped_item.highlight_text), pygame.mouse.get_pos())
+
+    def add_drop(self):
+        unlucky_drop = self.is_unlucky()
+        dropped_item = DropChanceManager().get_drop(unlucky_drop)
+        dropped_quantity = 1
+
+        self.display_manager.inventory_table.add_drop(dropped_item, dropped_quantity)
+        return dropped_item
 
     def handle_mouse_click(self):
         """
@@ -70,79 +127,29 @@ class ActionManager:
             self.panel.set_active_button(obj)
             self.display_manager.page = str(obj).split("_")[0]
 
+            if obj == self.panel.buttons[0]:
+                self.display_manager.inventory_table.clear()
+            elif obj == self.panel.buttons[1]:
+                merge_inventory_to_bank(self.display_manager.inventory_table, self.display_manager.bank_table)
+
         if self.display_manager.page == self.display_manager.MINING_PAGE:
             if obj == self.display_manager.middle_screen_background_image:
-                # TODO: sprite_queue, 2 x layers
-                # ПЕРВЫЙ ЭТАП
-                # Определение места попадания
-                # Запуск анимации кирки
-                # Проверка коллизии с кружочками
-                #
-                # ВТОРОЙ ЭТАП
-                # Отрисовка кружочка
-                # Вычисление дропа
-                # Добавление дропа в банк
-                # Вывод текста с дропом
+                self.do_pickaxe_hit()
 
-                # TODO: убрать в отдельный метод hit_circle.on_click() или типа того
-                unlucky_drop = False
-                mouse_pos = pygame.mouse.get_pos()
-                for hit_circle in self.display_manager.pickaxe_hit_circles:
-                    if hit_circle.rect.collidepoint(mouse_pos):
-                        pos_in_mask = mouse_pos[0] - hit_circle.rect.x, mouse_pos[1] - hit_circle.rect.y
-                        if hit_circle.mask.get_at(pos_in_mask):
-                            unlucky_drop = True
-                            break
-
-                dropped_item = DropChanceManager().get_drop(unlucky_drop)
-                row = self.display_manager.inventory_table.get_row(dropped_item)
-                dropped_quantity = 1
-                row.add_quantity(dropped_quantity)
-
-                random_coords = get_random_point_in_circle(
-                    pygame.mouse.get_pos()[0],
-                    pygame.mouse.get_pos()[1],
-                    15,
-                )
-                self.display_manager.add_hit_circle(random_coords)
-                self.display_manager.pickaxe.do_pickaxe_hit(random_coords)
-                self.display_manager.highlight_text(str(row.item.highlight_text), pygame.mouse.get_pos())
+            """
+            Для MVP выход из рейда и время не делаем
             elif obj == self.display_manager.end_run_button:
                 end_run_screen_alarm = Alarm("end_run_screen", 50)
                 self.alarms.append(end_run_screen_alarm)
                 self.display_manager.run_end_run_screen()
-
-                # craft_button = self.panel.buttons[1]
-                # self.panel.set_active_button(craft_button)
-                # self.display_manager.page = str(craft_button).split("_")[0]
+            """
 
         elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
             if obj == self.display_manager.crafting_middle_screen.crafting_recipe_image:
-                row = self.display_manager.bank_table.get_row(IronIngot.slug)
+                row = self.display_manager.bank_table.get_row(IronIngot)
                 row.add_quantity(1)
 
 
-class SelectorUI:
-    """
-    Абстрактный класс селектор, отвечающий за логику, но не за отображение.
-    Из всех элементов активен может быть только один.
-    """
-    def __init__(self, buttons):
-        self.buttons = buttons
-        self.active_button = None
-
-    def set_active_button(self, new_active_button: Button):
-        for button in self.buttons:
-            if button == new_active_button:
-                button.on = True
-            else:
-                button.on = False
-            button.update()
-
-        self.active_button = new_active_button
-
-
-# TODO: заготовка :)
 class DropChanceManager:
     loot_table = {
         "iron_ore": 15,
@@ -152,14 +159,14 @@ class DropChanceManager:
     def __init__(self):
         pass
 
-    def get_drop(self, unlucky_drop):
+    def get_drop(self, unlucky_drop: bool) -> Type[Item]:
         roll = random.randint(1, 100)
         if unlucky_drop:
-            return "poor_iron_ore"
+            return PoorIronOre
 
         if roll <= self.loot_table["iron_ore"]:
-            return "iron_ore"
-        return "poor_iron_ore"
+            return IronOre
+        return PoorIronOre
 
 
 class TimeManager:
@@ -184,14 +191,9 @@ class Alarm:
     def __init__(self, event, count):
         self.event = event
         self.count = count
-        # self.on = True
 
     def handle_routine(self):
-        # if self.on:
         self.count -= 1
-
-        # if self.count == 0:
-        #     self.on = False
 
     @property
     def went_off(self):
