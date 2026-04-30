@@ -65,6 +65,33 @@ class AnimatedObjectV2:
         surface.blit(self.image, self.rect)
 
 
+class EndRunScreen(AnimatedObjectV2):
+    def __init__(self):
+        self.end_run_screen_1 = get_scaled_image("sprites/end_run_screen_1.png", 3)
+        self.end_run_screen_2 = get_scaled_image("sprites/end_run_screen_2.png", 3)
+
+        self.frame_image = {
+            0: self.end_run_screen_1,
+            10: self.end_run_screen_2,
+            20: self.end_run_screen_1,
+            30: self.end_run_screen_2,
+            40: self.end_run_screen_1,
+            50: stop_draw,
+        }
+
+        self.animation_count = 50
+
+        rect = self.end_run_screen_1.get_rect()
+        rect.topleft = (400, 200)
+        self.rect = rect
+
+        self.image = stop_draw
+
+    def start(self):
+        self.animation_count = 0
+        self.image = self.end_run_screen_1
+
+
 class CommonSprite:
     def __init__(self, image):
         self.image = image

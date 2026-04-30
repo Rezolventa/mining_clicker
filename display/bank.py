@@ -1,3 +1,5 @@
+from typing import Type
+
 from consts import WHITE, DEFAULT_FONT
 from display.helpers import get_scaled_image
 from items import PoorIronOre, IronOre, IronIngot, Coal, SilverOre, GoldenOre, LavaOre, SilverIngot, GoldenIngot, \
@@ -23,6 +25,15 @@ class ObjectRowIconAndText:
 
     def add_quantity(self, quantity):
         self.quantity += quantity
+        if self.quantity < 0:
+            raise NotEnough
+        self.update()
+
+    def set_quantity(self, quantity):
+        self.quantity = quantity
+        self.update()
+
+    def update(self):
         self.text_image = DEFAULT_FONT.render("x" + str(self.quantity), True, WHITE)
 
     def clear(self):
@@ -60,7 +71,7 @@ class ItemTable:
                 if row.quantity > 0:
                     row.draw(surface)
 
-    def get_row(self, item: Item) -> ObjectRowIconAndText:
+    def get_row(self, item: Type[Item]) -> ObjectRowIconAndText:
         for column in self.display_table:
             for row in column:
                 if row.item == item:
@@ -99,3 +110,7 @@ def merge_inventory_to_bank(inventory: ItemTable, bank: ItemTable) -> None:
         for row in column:
             bank_row = bank.get_row(row.item)
             bank_row.add_quantity(row.quantity)
+
+
+class NotEnough(Exception):
+    pass

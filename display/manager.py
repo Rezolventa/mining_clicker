@@ -1,10 +1,13 @@
 from typing import Type
 
 import pygame
+from pygame.sprite import Sprite
 
-from display.bank import Bank, Inventory, merge_inventory_to_bank
+from display.bank import Bank, Inventory, merge_inventory_to_bank, NotEnough
 from consts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND, DEFAULT_FONT
 from display.helpers import get_scaled_image, AnimatedObject, CommonSprite, stop_draw, AnimatedObjectV2
+from items import PoorIronOre, Coal, IronIngot, IronOre, SilverOre, SilverIngot, GoldenIngot, GoldenOre, LavaOre, \
+    LavaIngot
 
 
 class DisplayManager:
@@ -37,6 +40,12 @@ class DisplayManager:
         # банк/инвентарь (правая панель)
         self.inventory_table = Inventory((1000, 450))
         self.bank_table = Bank((1000, 450))
+        self.bank_table.add_drop(PoorIronOre, 350)
+        self.bank_table.add_drop(IronOre, 350)
+        self.bank_table.add_drop(Coal, 1500)
+        self.bank_table.add_drop(SilverOre, 250)
+        self.bank_table.add_drop(GoldenOre, 150)
+        self.bank_table.add_drop(LavaOre, 25)
 
         """    
         Для MVP выход из рейда и время не делаем
@@ -51,6 +60,7 @@ class DisplayManager:
         """
 
     def init_panel_buttons(self):
+        # TODO: унаследоваться от общего класса
         mining_button = Button(
             "mining_button",
             get_scaled_image("sprites/mining_button_on.png", 2),
@@ -155,6 +165,11 @@ class DisplayManager:
     def add_hit_circle(self, center_coords):
         self.pickaxe_hit_circles.append(HitCircle(center_coords))
 
+    def clear_mining_screen(self):
+        self.inventory_table.clear()
+        self.pickaxe_hit_circles = []
+        self.highlight_text_objects = []
+
     """    
     Для MVP выход из рейда и время не делаем
     def run_end_run_screen(self):
@@ -236,11 +251,134 @@ class PickaxeHit(AnimatedObjectV2):
 
 class CraftingMiddleScreen(AnimatedObject):
     def __init__(self):
-        self.crafting_recipe_image = CommonSprite(get_scaled_image("sprites/crafting_iron_ingot.png", 4))
-        self.crafting_recipe_image.rect.topleft = (300, 250)
+        self.crafting_poor_iron_ingot = PoorIronIngotButton()
+        self.crafting_poor_iron_ingot.rect.topleft = (300, 250)
+
+        self.crafting_iron_ingot = IronIngotButton()
+        self.crafting_iron_ingot.rect.topleft = (450, 250)
+
+        self.crafting_silver_ingot = SilverIngotButton()
+        self.crafting_silver_ingot.rect.topleft = (600, 250)
+
+        self.crafting_golden_ingot = GoldenIngotButton()
+        self.crafting_golden_ingot.rect.topleft = (300, 400)
+
+        self.crafting_lava_ingot = LavaIngotButton()
+        self.crafting_lava_ingot.rect.topleft = (450, 400)
+
+        self.group = [
+            self.crafting_poor_iron_ingot,
+            self.crafting_iron_ingot,
+            self.crafting_silver_ingot,
+            self.crafting_golden_ingot,
+            self.crafting_lava_ingot,
+        ]
 
     def draw(self, surface):
-        self.crafting_recipe_image.draw(surface)
+        for sprite in self.group:
+            sprite.draw(surface)
+
+
+class CraftingRecipeButton(CommonSprite):
+    _image = None
+    credit = dict()
+    debit = dict()
+
+    def __init__(self):
+        super().__init__(get_scaled_image(self._image, 3))
+
+    def make_transaction(self, bank_table: Bank):
+        """
+        Запоминаем старые значения на случай отката
+        """
+        old_values = dict()
+
+        try:
+            for item, quantity in self.credit.items():
+                row = bank_table.get_row(item)
+                old_values[item] = row.quantity
+                row.add_quantity(-quantity)
+        except NotEnough:
+            self.rollback(bank_table, old_values)
+            return
+
+        for key, value in self.debit.items():
+            row = bank_table.get_row(key)
+            row.add_quantity(value)
+
+    @staticmethod
+    def rollback(bank_table: Bank, old_values: dict):
+        for item, quantity in old_values.items():
+            row = bank_table.get_row(item)
+            row.set_quantity(quantity)
+
+    def on_click(self, bank_table: Bank):
+        self.make_transaction(bank_table)
+
+
+class PoorIronIngotButton(CraftingRecipeButton):
+    _image = "sprites/crafting_poor_iron_ingot.png"
+
+    credit = {
+        PoorIronOre: 8,
+        Coal: 3,
+    }
+
+    debit = {
+        IronIngot: 1,
+    }
+
+
+class IronIngotButton(CraftingRecipeButton):
+    _image = "sprites/crafting_iron_ingot.png"
+
+    credit = {
+        IronOre: 2,
+        Coal: 1,
+    }
+
+    debit = {
+        IronIngot: 1,
+    }
+
+
+class SilverIngotButton(CraftingRecipeButton):
+    _image = "sprites/crafting_silver_ingot.png"
+
+    credit = {
+        SilverOre: 2,
+        Coal: 15,
+    }
+
+    debit = {
+        SilverIngot: 1,
+    }
+
+
+class GoldenIngotButton(CraftingRecipeButton):
+    _image = "sprites/crafting_golden_ingot.png"
+
+    credit = {
+        GoldenOre: 2,
+        Coal: 4,
+    }
+
+    debit = {
+        GoldenIngot: 1,
+    }
+
+
+class LavaIngotButton(CraftingRecipeButton):
+    _image = "sprites/crafting_lava_ingot.png"
+
+    credit = {
+        LavaOre: 1,
+        Coal: 80,
+    }
+
+    debit = {
+        LavaIngot: 1,
+    }
 
 
 class LiftingText(AnimatedObject):
@@ -302,33 +440,6 @@ class Clock:
         self.image = DEFAULT_FONT.render(text, True, WHITE)
 
 
-class EndRunScreen(AnimatedObjectV2):
-    def __init__(self):
-        self.end_run_screen_1 = get_scaled_image("sprites/end_run_screen_1.png", 3)
-        self.end_run_screen_2 = get_scaled_image("sprites/end_run_screen_2.png", 3)
-
-        self.frame_image = {
-            0: self.end_run_screen_1,
-            10: self.end_run_screen_2,
-            20: self.end_run_screen_1,
-            30: self.end_run_screen_2,
-            40: self.end_run_screen_1,
-            50: stop_draw,
-        }
-
-        self.animation_count = 50
-
-        rect = self.end_run_screen_1.get_rect()
-        rect.topleft = (400, 200)
-        self.rect = rect
-
-        self.image = stop_draw
-
-    def start(self):
-        self.animation_count = 0
-        self.image = self.end_run_screen_1
-
-
 class SelectorUI:
     """
     Из всех элементов активен может быть только один.
@@ -346,3 +457,5 @@ class SelectorUI:
             button.update()
 
         self.active_button = new_active_button
+
+

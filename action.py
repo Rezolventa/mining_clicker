@@ -6,7 +6,7 @@ from consts import TICKS_PER_SECOND
 from display.bank import merge_inventory_to_bank
 from display.helpers import get_random_point_in_circle
 from display.manager import SelectorUI
-from items import IronIngot, Item, PoorIronOre, IronOre
+from items import IronIngot, Item, PoorIronOre, IronOre, Coal
 
 from typing import TYPE_CHECKING, Type
 
@@ -49,8 +49,9 @@ class ActionManager:
             """
 
         elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
-            if self.display_manager.crafting_middle_screen.crafting_recipe_image.rect.collidepoint(pygame.mouse.get_pos()):
-                return self.display_manager.crafting_middle_screen.crafting_recipe_image
+            for crafting_item in self.display_manager.crafting_middle_screen.group:
+                if crafting_item.rect.collidepoint(pygame.mouse.get_pos()):
+                    return crafting_item
 
         return None
 
@@ -128,7 +129,7 @@ class ActionManager:
             self.display_manager.page = str(obj).split("_")[0]
 
             if obj == self.panel.buttons[0]:
-                self.display_manager.inventory_table.clear()
+                self.display_manager.clear_mining_screen()
             elif obj == self.panel.buttons[1]:
                 merge_inventory_to_bank(self.display_manager.inventory_table, self.display_manager.bank_table)
 
@@ -145,15 +146,23 @@ class ActionManager:
             """
 
         elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
-            if obj == self.display_manager.crafting_middle_screen.crafting_recipe_image:
-                row = self.display_manager.bank_table.get_row(IronIngot)
-                row.add_quantity(1)
+            if obj in self.display_manager.crafting_middle_screen.group:
+                obj.on_click(self.display_manager.bank_table)
+
+
+class MiningPageManager:
+    pass
+
+
+class CraftingPageManager:
+    pass
 
 
 class DropChanceManager:
     loot_table = {
+        "poor_iron_ore": 60,
         "iron_ore": 15,
-        "poor_iron_ore": 85,
+        "coal": 25,
     }
 
     def __init__(self):
@@ -166,6 +175,8 @@ class DropChanceManager:
 
         if roll <= self.loot_table["iron_ore"]:
             return IronOre
+        elif self.loot_table["iron_ore"] <= roll < self.loot_table["iron_ore"] + self.loot_table["coal"]:
+            return Coal
         return PoorIronOre
 
 
