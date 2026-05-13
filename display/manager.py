@@ -7,7 +7,7 @@ from display.bank import Bank, Inventory, merge_inventory_to_bank, NotEnough
 from consts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND, DEFAULT_FONT
 from display.helpers import get_scaled_image, AnimatedObject, CommonSprite, stop_draw, AnimatedObjectV2
 from items import PoorIronOre, Coal, IronIngot, IronOre, SilverOre, SilverIngot, GoldenIngot, GoldenOre, LavaOre, \
-    LavaIngot
+    LavaIngot, Gold
 
 
 class DisplayManager:
@@ -46,6 +46,7 @@ class DisplayManager:
         self.bank_table.add_drop(SilverOre, 250)
         self.bank_table.add_drop(GoldenOre, 150)
         self.bank_table.add_drop(LavaOre, 25)
+        self.gold = 0
 
         """    
         Для MVP выход из рейда и время не делаем
@@ -58,6 +59,8 @@ class DisplayManager:
         self.end_run_button.rect.topleft = (950, 100)
         self.clock = Clock((900, 50))
         """
+
+        self.sell_page_manager = SellPageManager()
 
     def init_panel_buttons(self):
         # TODO: унаследоваться от общего класса
@@ -101,6 +104,8 @@ class DisplayManager:
             self.render_mining_page()
         elif self.page == self.CRAFTING_PAGE:
             self.render_craft_page()
+        elif self.page == self.VENDOR_PAGE:
+            self.render_vendor_page()
 
         self.render_right_panel()
 
@@ -136,13 +141,19 @@ class DisplayManager:
         self.crafting_middle_screen.draw(self.main_surface)
 
     def render_vendor_page(self):
-        pass
+        self.sell_page_manager.draw(self.main_surface)
 
     def render_right_panel(self):
         if self.page == self.MINING_PAGE:
             self.inventory_table.draw(self.main_surface)
         else:
             self.bank_table.draw(self.main_surface)
+
+        gold_text = DEFAULT_FONT.render(f"Gold: {self.gold}", True, WHITE)
+        self.main_surface.blit(gold_text, (1000, 80))
+
+    def add_gold(self, quantity):
+        self.gold += quantity
 
     def highlight_text(self, item_name, coords):
         # TODO: вот же пример исчезающего объекта, надо сделать как тут
@@ -249,6 +260,7 @@ class PickaxeHit(AnimatedObjectV2):
         self.rect = rect
 
 
+# TODO: это то же самое, что CraftingPageManager?
 class CraftingMiddleScreen(AnimatedObject):
     def __init__(self):
         self.crafting_poor_iron_ingot = PoorIronIngotButton()
@@ -279,7 +291,7 @@ class CraftingMiddleScreen(AnimatedObject):
             sprite.draw(surface)
 
 
-class CraftingRecipeButton(CommonSprite):
+class TransactionButton(CommonSprite):
     _image = None
     credit = dict()
     debit = dict()
@@ -288,23 +300,23 @@ class CraftingRecipeButton(CommonSprite):
         super().__init__(get_scaled_image(self._image, 3))
 
     def make_transaction(self, bank_table: Bank):
-        """
-        Запоминаем старые значения на случай отката
-        """
+        pass
+
+    def on_click(self, bank_table: Bank):
+        return self.make_transaction(bank_table)
+
+
+class CraftingRecipeButton(TransactionButton):
+    def make_transaction(self, bank_table: Bank):
         old_values = dict()
 
         try:
-            for item, quantity in self.credit.items():
-                row = bank_table.get_row(item)
-                old_values[item] = row.quantity
-                row.add_quantity(-quantity)
+            self.do_credit(bank_table, old_values)
         except NotEnough:
             self.rollback(bank_table, old_values)
             return
 
-        for key, value in self.debit.items():
-            row = bank_table.get_row(key)
-            row.add_quantity(value)
+        self.do_debit(bank_table)
 
     @staticmethod
     def rollback(bank_table: Bank, old_values: dict):
@@ -312,8 +324,34 @@ class CraftingRecipeButton(CommonSprite):
             row = bank_table.get_row(item)
             row.set_quantity(quantity)
 
-    def on_click(self, bank_table: Bank):
-        self.make_transaction(bank_table)
+    def do_credit(self, bank_table: Bank, old_values: dict):
+        for item, quantity in self.credit.items():
+            row = bank_table.get_row(item)
+            old_values[item] = row.quantity  # запоминаем старые значения на случай отката
+            row.add_quantity(-quantity)
+
+    def do_debit(self, bank_table: Bank):
+        for key, value in self.debit.items():
+            row = bank_table.get_row(key)
+            row.add_quantity(value)
+
+
+class PriceTag(CraftingRecipeButton):
+    price = None
+
+    def make_transaction(self, bank_table: Bank):
+        old_values = dict()
+
+        try:
+            self.do_credit(bank_table, old_values)
+        except NotEnough:
+            self.rollback(bank_table, old_values)
+            return 0
+
+        return self.do_debit(bank_table)
+
+    def do_debit(self, bank_table: Bank):
+        return self.price
 
 
 class PoorIronIngotButton(CraftingRecipeButton):
@@ -377,6 +415,42 @@ class LavaIngotButton(CraftingRecipeButton):
     }
 
     debit = {
+        LavaIngot: 1,
+    }
+
+
+class SellIronIngotButton(PriceTag):
+    _image = "sprites/sell_iron_ingot.png"
+    price = 2
+
+    credit = {
+        IronIngot: 1,
+    }
+
+
+class SellSilverIngotButton(PriceTag):
+    _image = "sprites/sell_silver_ingot.png"
+    price = 25
+
+    credit = {
+        SilverIngot: 1,
+    }
+
+
+class SellGoldenIngotButton(PriceTag):
+    _image = "sprites/sell_golden_ingot.png"
+    price = 50
+
+    credit = {
+        GoldenIngot: 1,
+    }
+
+
+class SellLavaIngotButton(PriceTag):
+    _image = "sprites/sell_lava_ingot.png"
+    price = 1500
+
+    credit = {
         LavaIngot: 1,
     }
 
@@ -459,3 +533,35 @@ class SelectorUI:
         self.active_button = new_active_button
 
 
+class MiningPageManager:
+    pass
+
+
+class CraftingPageManager:
+    pass
+
+
+class SellPageManager:
+    def __init__(self):
+        self.sell_iron_ingot = SellIronIngotButton()
+        self.sell_iron_ingot.rect.topleft = (300, 250)
+
+        self.sell_silver_ingot = SellSilverIngotButton()
+        self.sell_silver_ingot.rect.topleft = (450, 250)
+
+        self.sell_golden_ingot = SellGoldenIngotButton()
+        self.sell_golden_ingot.rect.topleft = (600, 250)
+
+        self.sell_lava_ingot = SellLavaIngotButton()
+        self.sell_lava_ingot.rect.topleft = (300, 400)
+
+        self.group = [
+            self.sell_iron_ingot,
+            self.sell_silver_ingot,
+            self.sell_golden_ingot,
+            self.sell_lava_ingot,
+        ]
+
+    def draw(self, surface):
+        for sprite in self.group:
+            sprite.draw(surface)
