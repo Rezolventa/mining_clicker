@@ -1,24 +1,25 @@
 from typing import Type
 
 import pygame
-from pygame.sprite import Sprite
 
-from display.bank import Bank, Inventory, merge_inventory_to_bank, NotEnough
+from display.bank import Bank, NotEnough
 from consts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND, DEFAULT_FONT
 from display.helpers import get_scaled_image, AnimatedObject, CommonSprite, stop_draw, AnimatedObjectV2
+from game_state import GameState
 from items import PoorIronOre, Coal, IronIngot, IronOre, SilverOre, SilverIngot, GoldenIngot, GoldenOre, LavaOre, \
-    LavaIngot, Gold
+    LavaIngot
 
 
 class DisplayManager:
-    MINING_PAGE = "mining"
-    CRAFTING_PAGE = "crafting"
-    VENDOR_PAGE = "vendor"
+    MINING_PAGE = GameState.MINING_PAGE
+    CRAFTING_PAGE = GameState.CRAFTING_PAGE
+    VENDOR_PAGE = GameState.VENDOR_PAGE
 
-    def __init__(self):
-        self.main_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-        self.page = self.MINING_PAGE
+    def __init__(self, game_state: GameState, main_surface=None):
+        self.game_state = game_state
+        self.main_surface = main_surface or pygame.display.get_surface()
+        if self.main_surface is None:
+            self.main_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
         # TODO: этот CommonSprite на хрен не нужен, лучше в draw напрямую указывать координаты, т.к. это статика
         self.middle_screen_background_image = CommonSprite(get_scaled_image("sprites/middle_screen.png", 4))
@@ -36,17 +37,6 @@ class DisplayManager:
 
         # crafting
         self.crafting_middle_screen = CraftingMiddleScreen()
-
-        # банк/инвентарь (правая панель)
-        self.inventory_table = Inventory((1000, 450))
-        self.bank_table = Bank((1000, 450))
-        self.bank_table.add_drop(PoorIronOre, 350)
-        self.bank_table.add_drop(IronOre, 350)
-        self.bank_table.add_drop(Coal, 1500)
-        self.bank_table.add_drop(SilverOre, 250)
-        self.bank_table.add_drop(GoldenOre, 150)
-        self.bank_table.add_drop(LavaOre, 25)
-        self.gold = 0
 
         """    
         Для MVP выход из рейда и время не делаем
@@ -100,11 +90,11 @@ class DisplayManager:
         self.render_common_ui()
 
         # основной экран
-        if self.page == self.MINING_PAGE:
+        if self.game_state.current_page == self.MINING_PAGE:
             self.render_mining_page()
-        elif self.page == self.CRAFTING_PAGE:
+        elif self.game_state.current_page == self.CRAFTING_PAGE:
             self.render_craft_page()
-        elif self.page == self.VENDOR_PAGE:
+        elif self.game_state.current_page == self.VENDOR_PAGE:
             self.render_vendor_page()
 
         self.render_right_panel()
@@ -144,16 +134,13 @@ class DisplayManager:
         self.sell_page_manager.draw(self.main_surface)
 
     def render_right_panel(self):
-        if self.page == self.MINING_PAGE:
-            self.inventory_table.draw(self.main_surface)
+        if self.game_state.current_page == self.MINING_PAGE:
+            self.game_state.inventory.draw(self.main_surface)
         else:
-            self.bank_table.draw(self.main_surface)
+            self.game_state.bank.draw(self.main_surface)
 
-        gold_text = DEFAULT_FONT.render(f"Gold: {self.gold}", True, WHITE)
+        gold_text = DEFAULT_FONT.render(f"Gold: {self.game_state.gold}", True, WHITE)
         self.main_surface.blit(gold_text, (1000, 80))
-
-    def add_gold(self, quantity):
-        self.gold += quantity
 
     def highlight_text(self, item_name, coords):
         # TODO: вот же пример исчезающего объекта, надо сделать как тут
@@ -177,7 +164,6 @@ class DisplayManager:
         self.pickaxe_hit_circles.append(HitCircle(center_coords))
 
     def clear_mining_screen(self):
-        self.inventory_table.clear()
         self.pickaxe_hit_circles = []
         self.highlight_text_objects = []
 
@@ -185,7 +171,7 @@ class DisplayManager:
     Для MVP выход из рейда и время не делаем
     def run_end_run_screen(self):
         self.end_run_screen.start()
-        merge_inventory_to_bank(self.inventory_table, self.bank_table)
+        self.game_state.move_inventory_to_bank()
     """
 
 

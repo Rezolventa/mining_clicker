@@ -3,15 +3,12 @@ import random
 import pygame
 
 from consts import TICKS_PER_SECOND
-from display.bank import merge_inventory_to_bank
 from display.helpers import get_random_point_in_circle
 from display.manager import SelectorUI
+from game_state import GameState
 from items import IronIngot, Item, PoorIronOre, IronOre, Coal
 
-from typing import TYPE_CHECKING, Type
-
-if TYPE_CHECKING:
-    from client import MainController
+from typing import Type
 
 
 class ActionManager:
@@ -19,9 +16,9 @@ class ActionManager:
     Обработчик всяких разных событий на клиенте
     """
 
-    def __init__(self, main_controller: "MainController"):
-        self.main_controller = main_controller
-        self.display_manager = main_controller.display_manager
+    def __init__(self, game_state: GameState, display_manager):
+        self.game_state = game_state
+        self.display_manager = display_manager
         self.panel = SelectorUI(self.display_manager.buttons)
 
         # текущий основной экран
@@ -38,7 +35,7 @@ class ActionManager:
             if button.rect.collidepoint(pygame.mouse.get_pos()):
                 return button
 
-        if self.display_manager.page == self.display_manager.MINING_PAGE:
+        if self.game_state.current_page == self.game_state.MINING_PAGE:
             if self.display_manager.middle_screen_background_image.rect.collidepoint(pygame.mouse.get_pos()):
                 return self.display_manager.middle_screen_background_image
 
@@ -48,12 +45,12 @@ class ActionManager:
                 return self.display_manager.end_run_button
             """
 
-        elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
+        elif self.game_state.current_page == self.game_state.CRAFTING_PAGE:
             for crafting_item in self.display_manager.crafting_middle_screen.group:
                 if crafting_item.rect.collidepoint(pygame.mouse.get_pos()):
                     return crafting_item
 
-        elif self.display_manager.page == self.display_manager.VENDOR_PAGE:
+        elif self.game_state.current_page == self.game_state.VENDOR_PAGE:
             for sell_item in self.display_manager.sell_page_manager.group:
                 if sell_item.rect.collidepoint(pygame.mouse.get_pos()):
                     return sell_item
@@ -77,7 +74,7 @@ class ActionManager:
                 # сработал будильник - переключаем на вкладку Craft
                 craft_button = self.panel.buttons[1]
                 self.panel.set_active_button(craft_button)
-                self.display_manager.page = str(craft_button).split("_")[0]
+                self.game_state.current_page = str(craft_button).split("_")[0]
                 self.alarms.remove(alarm)
             """
 
@@ -121,7 +118,7 @@ class ActionManager:
         dropped_item = DropChanceManager().get_drop(unlucky_drop)
         dropped_quantity = 1
 
-        self.display_manager.inventory_table.add_drop(dropped_item, dropped_quantity)
+        self.game_state.inventory.add_drop(dropped_item, dropped_quantity)
         return dropped_item
 
     def handle_mouse_click(self):
@@ -131,15 +128,15 @@ class ActionManager:
         obj = self.get_hovered_object()
         if obj in self.panel.buttons:
             self.panel.set_active_button(obj)
-            self.display_manager.page = str(obj).split("_")[0]
+            self.game_state.current_page = str(obj).split("_")[0]
 
             if obj == self.panel.buttons[0]:
+                self.game_state.clear_inventory()
                 self.display_manager.clear_mining_screen()
             elif obj == self.panel.buttons[1]:
-                merge_inventory_to_bank(self.display_manager.inventory_table, self.display_manager.bank_table)
-                self.display_manager.inventory_table.clear()
+                self.game_state.move_inventory_to_bank()
 
-        if self.display_manager.page == self.display_manager.MINING_PAGE:
+        if self.game_state.current_page == self.game_state.MINING_PAGE:
             if obj == self.display_manager.middle_screen_background_image:
                 self.do_pickaxe_hit()
 
@@ -151,16 +148,16 @@ class ActionManager:
                 self.display_manager.run_end_run_screen()
             """
 
-        elif self.display_manager.page == self.display_manager.CRAFTING_PAGE:
+        elif self.game_state.current_page == self.game_state.CRAFTING_PAGE:
             if obj in self.display_manager.crafting_middle_screen.group:
-                obj.on_click(self.display_manager.bank_table)
+                obj.on_click(self.game_state.bank)
 
-        elif self.display_manager.page == self.display_manager.VENDOR_PAGE:  # TODO: sell_page
+        elif self.game_state.current_page == self.game_state.VENDOR_PAGE:  # TODO: sell_page
             # self.display_manager.sell_page_manager.handle_mouse_click(obj)  # TODO: прийти к единому интерфейсу
             if obj in self.display_manager.sell_page_manager.group:
-                gold_earned = obj.on_click(self.display_manager.bank_table)
+                gold_earned = obj.on_click(self.game_state.bank)
                 if gold_earned:
-                    self.display_manager.add_gold(gold_earned)
+                    self.game_state.add_gold(gold_earned)
 
 
 class DropChanceManager:

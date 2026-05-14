@@ -1,17 +1,20 @@
 import pygame
 
 from action import ActionManager, TimeManager
-from consts import TICKS_PER_SECOND
+from consts import SCREEN_HEIGHT, SCREEN_WIDTH, TICKS_PER_SECOND
 from display.cursor import my_set_cursor, MINING_CIRCLE_CURSOR, ARROW_CURSOR
 from display.manager import DisplayManager
+from game_state import GameState
 
 pygame.init()
 
 
 class MainController:
     def __init__(self):
-        self.display_manager = DisplayManager()
-        self.action_manager = ActionManager(self)
+        self.main_surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.game_state = GameState()
+        self.display_manager = DisplayManager(self.game_state, self.main_surface)
+        self.action_manager = ActionManager(self.game_state, self.display_manager)
         self.time_manager = TimeManager()
 
 
