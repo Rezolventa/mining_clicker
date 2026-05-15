@@ -1,14 +1,13 @@
 import random
+from typing import Type
 
 import pygame
 
 from consts import TICKS_PER_SECOND
 from display.helpers import get_random_point_in_circle
-from display.manager import SelectorUI
+from display.utils import SelectorUI
 from game_state import GameState
-from items import IronIngot, Item, PoorIronOre, IronOre, Coal
-
-from typing import Type
+from items import Coal, IronOre, Item, PoorIronOre
 
 
 class ActionManager:
