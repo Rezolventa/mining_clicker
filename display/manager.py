@@ -2,11 +2,16 @@ from typing import Type
 
 import pygame
 
-from consts import WHITE, SCREEN_WIDTH, SCREEN_HEIGHT, TICKS_PER_SECOND, DEFAULT_FONT
-from display.animated import PickaxeHit, LiftingText, CraftingMiddleScreen
-from display.buttons import SellLavaIngotButton, SellGoldenIngotButton, SellSilverIngotButton, SellIronIngotButton, \
-    Button
-from display.helpers import get_scaled_image, AnimatedObject, CommonSprite, stop_draw, AnimatedObjectV2
+from consts import DEFAULT_FONT, SCREEN_HEIGHT, SCREEN_WIDTH, WHITE
+from display.animated import CraftingMiddleScreen, LiftingText, PickaxeHit
+from display.buttons import (
+    Button,
+    SellGoldenIngotButton,
+    SellIronIngotButton,
+    SellLavaIngotButton,
+    SellSilverIngotButton,
+)
+from display.helpers import AnimatedObject, CommonSprite, get_scaled_image
 from display.utils import HitCircle
 from game_state import GameState
 
