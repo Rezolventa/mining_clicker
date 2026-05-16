@@ -1,6 +1,17 @@
 [tool.black]
 line-length = 120
+exclude = '''
+/(
+    \.git
+  | \.idea
+  | __pycache__
+  | env
+  | venv
+  | sprites
+)/
+'''
 
 [tool.isort]
 profile = "black"
 line_length = 120
+skip = [".git", ".idea", "__pycache__", "env", "venv", "sprites"]
