@@ -21,7 +21,7 @@ class ActionManager:
         self.panel = SelectorUI(self.display_manager.buttons)
 
         # текущий основной экран
-        self.middle_screen = self.display_manager.mining_middle_screen
+        self.screen = self.display_manager.mining_screen
         self.pickaxe = self.display_manager.pickaxe
 
         self.alarms: list[Alarm] = []
@@ -45,12 +45,12 @@ class ActionManager:
             """
 
         elif self.game_state.current_page == self.game_state.CRAFTING_PAGE:
-            for crafting_item in self.display_manager.crafting_middle_screen.group:
+            for crafting_item in self.display_manager.crafting_screen.group:
                 if crafting_item.rect.collidepoint(pygame.mouse.get_pos()):
                     return crafting_item
 
         elif self.game_state.current_page == self.game_state.VENDOR_PAGE:
-            for sell_item in self.display_manager.sell_page_manager.group:
+            for sell_item in self.display_manager.sell_screen.group:
                 if sell_item.rect.collidepoint(pygame.mouse.get_pos()):
                     return sell_item
 
@@ -148,12 +148,12 @@ class ActionManager:
             """
 
         elif self.game_state.current_page == self.game_state.CRAFTING_PAGE:
-            if obj in self.display_manager.crafting_middle_screen.group:
+            if obj in self.display_manager.crafting_screen.group:
                 obj.on_click(self.game_state.bank)
 
         elif self.game_state.current_page == self.game_state.VENDOR_PAGE:  # TODO: sell_page
-            # self.display_manager.sell_page_manager.handle_mouse_click(obj)  # TODO: прийти к единому интерфейсу
-            if obj in self.display_manager.sell_page_manager.group:
+            # self.display_manager.sell_screen.handle_mouse_click(obj)  # TODO: прийти к единому интерфейсу
+            if obj in self.display_manager.sell_screen.group:
                 gold_earned = obj.on_click(self.game_state.bank)
                 if gold_earned:
                     self.game_state.add_gold(gold_earned)

@@ -3,7 +3,7 @@ from typing import Type
 import pygame
 
 from consts import DEFAULT_FONT, SCREEN_HEIGHT, SCREEN_WIDTH, WHITE
-from display.animated import CraftingMiddleScreen, LiftingText, PickaxeHit
+from display.animated import CraftingScreen, LiftingText, PickaxeHit
 from display.buttons import (
     Button,
     SellGoldenIngotButton,
@@ -36,13 +36,13 @@ class DisplayManager:
 
         # Основной экран
         # mining
-        self.mining_middle_screen = MiningMiddleScreen()
+        self.mining_screen = MiningScreen()
         self.pickaxe = PickaxeHit()
         self.highlight_text_objects: list[LiftingText] = []
         self.pickaxe_hit_circles = []
 
         # crafting
-        self.crafting_middle_screen = CraftingMiddleScreen()
+        self.crafting_screen = CraftingScreen()
 
         """    
         Для MVP выход из рейда и время не делаем
@@ -56,7 +56,7 @@ class DisplayManager:
         self.clock = Clock((900, 50))
         """
 
-        self.sell_page_manager = SellPageManager()
+        self.sell_screen = SellScreen()
 
     def init_panel_buttons(self):
         # TODO: унаследоваться от общего класса
@@ -112,7 +112,7 @@ class DisplayManager:
         """
 
     def render_mining_page(self):
-        self.mining_middle_screen.draw(self.main_surface)
+        self.mining_screen.draw(self.main_surface)
         self.pickaxe.draw(self.main_surface)
 
         # если использовать self.highlight_text_objects, возникает баг отображения при удалении элемента "на лету"
@@ -134,10 +134,10 @@ class DisplayManager:
         """
 
     def render_craft_page(self):
-        self.crafting_middle_screen.draw(self.main_surface)
+        self.crafting_screen.draw(self.main_surface)
 
     def render_vendor_page(self):
-        self.sell_page_manager.draw(self.main_surface)
+        self.sell_screen.draw(self.main_surface)
 
     def render_right_panel(self):
         if self.game_state.current_page == self.MINING_PAGE:
@@ -180,7 +180,7 @@ class DisplayManager:
     """
 
 
-class MiningMiddleScreen:
+class MiningScreen:
     def __init__(self):
         self.middle_screen_background_image = get_scaled_image("sprites/mining_background_2.png", 2)
 
@@ -188,7 +188,7 @@ class MiningMiddleScreen:
         surface.blit(self.middle_screen_background_image, (241, 10))
 
 
-class SellPageManager:
+class SellScreen:
     def __init__(self):
         self.sell_iron_ingot = SellIronIngotButton()
         self.sell_iron_ingot.rect.topleft = (300, 250)

@@ -35,8 +35,7 @@ class PickaxeHit(AnimatedObjectV2):
         self.rect = rect
 
 
-# TODO: это то же самое, что CraftingPageManager?
-class CraftingMiddleScreen(AnimatedObject):
+class CraftingScreen(AnimatedObject):
     def __init__(self):
         self.crafting_poor_iron_ingot = PoorIronIngotButton()
         self.crafting_poor_iron_ingot.rect.topleft = (300, 250)

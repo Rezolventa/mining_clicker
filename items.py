@@ -93,7 +93,3 @@ class LavaIngot(Item):
     image_url = "sprites/lava_ingot.png"
     highlight_text = "lava ingot"
     order_number = 103
-
-
-class Gold:
-    pass
