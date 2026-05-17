@@ -3,7 +3,7 @@ from typing import Type
 
 import pygame
 
-from consts import TICKS_PER_SECOND
+from consts import ENABLE_HIT_CIRCLES, TICKS_PER_SECOND
 from display.helpers import get_random_point_in_circle
 from display.utils import SelectorUI
 from game_state import GameState
@@ -78,6 +78,9 @@ class ActionManager:
             """
 
     def is_unlucky(self):
+        if not ENABLE_HIT_CIRCLES:
+            return False
+
         unlucky_drop = False
         mouse_pos = pygame.mouse.get_pos()
         for hit_circle in self.display_manager.pickaxe_hit_circles:
@@ -108,7 +111,8 @@ class ActionManager:
             pygame.mouse.get_pos()[1],
             15,
         )
-        self.display_manager.add_hit_circle(random_coords)
+        if ENABLE_HIT_CIRCLES:
+            self.display_manager.add_hit_circle(random_coords)
         self.display_manager.pickaxe.start(random_coords)
         self.display_manager.highlight_text(str(dropped_item.highlight_text), pygame.mouse.get_pos())
 

@@ -1,9 +1,20 @@
 from typing import Type
 
-from consts import WHITE, DEFAULT_FONT
+from consts import DEFAULT_FONT, WHITE
 from display.helpers import get_scaled_image
-from items import PoorIronOre, IronOre, IronIngot, Coal, SilverOre, GoldenOre, LavaOre, SilverIngot, GoldenIngot, \
-    LavaIngot, Item
+from items import (
+    Coal,
+    GoldenIngot,
+    GoldenOre,
+    IronIngot,
+    IronOre,
+    Item,
+    LavaIngot,
+    LavaOre,
+    PoorIronOre,
+    SilverIngot,
+    SilverOre,
+)
 
 
 class ObjectRowIconAndText:
@@ -62,7 +73,8 @@ class ItemTable:
 
             # переходим на следующий столбец
             self.top_left_coords = (
-                initial_top_left_coords[0] + self.space_between_columns_px, initial_top_left_coords[1]
+                initial_top_left_coords[0] + self.space_between_columns_px,
+                initial_top_left_coords[1],
             )
 
     def draw(self, surface):

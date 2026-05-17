@@ -3,7 +3,7 @@ import pygame
 from consts import WHITE
 
 
-def get_scaled_image(image, k = 1) -> pygame.surface.Surface:
+def get_scaled_image(image, k=1) -> pygame.surface.Surface:
     """
     Подгружает спрайт и увеличивает его размер в k раз.
     """
@@ -48,6 +48,7 @@ class AnimatedObjectV2:
     """
     Абстрактный класс для определения общих методов и их сигнатур.
     """
+
     frame_image = None
     animation_count = None
     image = None
@@ -101,8 +102,9 @@ class CommonSprite:
         surface.blit(self.image, self.rect)
 
 
-import random
 import math
+import random
+
 
 def get_random_point_in_circle(center_x, center_y, radius):
     angle = random.uniform(0, 2 * math.pi)

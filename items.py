@@ -1,5 +1,3 @@
-
-
 class Item:
     name = None
     slug = None

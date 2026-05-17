@@ -1,5 +1,5 @@
 from display.bank import Bank, Inventory, merge_inventory_to_bank
-from items import PoorIronOre, IronOre, Coal, SilverOre, GoldenOre, LavaOre
+from items import Coal, GoldenOre, IronOre, LavaOre, PoorIronOre, SilverOre
 
 
 class GameState:

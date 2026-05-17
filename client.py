@@ -2,7 +2,7 @@ import pygame
 
 from action import ActionManager, TimeManager
 from consts import SCREEN_HEIGHT, SCREEN_WIDTH, TICKS_PER_SECOND
-from display.cursor import my_set_cursor, MINING_CIRCLE_CURSOR, ARROW_CURSOR
+from display.cursor import ARROW_CURSOR, MINING_CIRCLE_CURSOR, my_set_cursor
 from display.manager import DisplayManager
 from game_state import GameState
 

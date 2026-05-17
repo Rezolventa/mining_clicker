@@ -1,10 +1,11 @@
-from display.helpers import get_scaled_image, AnimatedObject
+from display.helpers import AnimatedObject, get_scaled_image
 
 
 class PickaxeHitPointer(AnimatedObject):
     """
     Скорее всего уже не пригодится, но пусть останется как пример анимированного объекта
     """
+
     def __init__(self):
         self.sprites = [
             get_scaled_image("sprites/hit_1.png", 4),
