@@ -61,6 +61,7 @@ class ActionManager:
         Обрабатывает ежефреймные события
         """
         self.display_manager.add_animation_count()
+        self.game_state.add_rune_frame()
         self.handle_alarms()
 
     def handle_alarms(self):
@@ -104,17 +105,21 @@ class ActionManager:
         Добавление дропа в банк
         Вывод текста с дропом
         """
-        dropped_item = self.add_drop()
-
+        mouse_pos = pygame.mouse.get_pos()
         random_coords = get_random_point_in_circle(
-            pygame.mouse.get_pos()[0],
-            pygame.mouse.get_pos()[1],
+            mouse_pos[0],
+            mouse_pos[1],
             15,
         )
         if ENABLE_HIT_CIRCLES:
             self.display_manager.add_hit_circle(random_coords)
         self.display_manager.pickaxe.start(random_coords)
-        self.display_manager.highlight_text(str(dropped_item.highlight_text), pygame.mouse.get_pos())
+
+        if self.game_state.try_start_rune_challenge(mouse_pos):
+            return
+
+        dropped_item = self.add_drop()
+        self.display_manager.highlight_text(str(dropped_item.highlight_text), mouse_pos)
 
     def add_drop(self):
         unlucky_drop = self.is_unlucky()
@@ -135,11 +140,19 @@ class ActionManager:
 
             if obj == self.panel.buttons[0]:
                 self.game_state.clear_inventory()
+                self.game_state.clear_rune_challenge()
                 self.display_manager.clear_mining_screen()
-            elif obj == self.panel.buttons[1]:
+            else:
+                self.game_state.clear_rune_challenge()
+
+            if obj == self.panel.buttons[1]:
                 self.game_state.move_inventory_to_bank()
 
         if self.game_state.current_page == self.game_state.MINING_PAGE:
+            if self.game_state.has_active_rune_challenge():
+                self.handle_rune_click()
+                return
+
             if obj == self.display_manager.middle_screen_background_image:
                 self.do_pickaxe_hit()
 
@@ -161,6 +174,13 @@ class ActionManager:
                 gold_earned = obj.on_click(self.game_state.bank)
                 if gold_earned:
                     self.game_state.add_gold(gold_earned)
+
+    def handle_rune_click(self):
+        rune_clicked, rune_score = self.game_state.handle_rune_click(pygame.mouse.get_pos())
+        if rune_score is not None:
+            self.add_drop()
+
+        return rune_clicked
 
 
 class DropChanceManager:

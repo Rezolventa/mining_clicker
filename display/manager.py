@@ -2,7 +2,7 @@ from typing import Type
 
 import pygame
 
-from consts import DEFAULT_FONT, ENABLE_HIT_CIRCLES, SCREEN_HEIGHT, SCREEN_WIDTH, WHITE
+from consts import DEFAULT_FONT, ENABLE_HIT_CIRCLES, ENABLE_RUNES, SCREEN_HEIGHT, SCREEN_WIDTH, WHITE
 from display.animated import CraftingScreen, LiftingText, PickaxeHit
 from display.buttons import (
     Button,
@@ -127,6 +127,7 @@ class DisplayManager:
             for hit_circle in self.pickaxe_hit_circles:
                 hit_circle.draw(self.main_surface)
 
+        self.render_rune_challenge()
         """    
         Для MVP выход из рейда и время не делаем
         # TODO: двойная проверка?
@@ -148,6 +149,10 @@ class DisplayManager:
 
         gold_text = DEFAULT_FONT.render(f"Gold: {self.game_state.gold}", True, WHITE)
         self.main_surface.blit(gold_text, (1000, 80))
+
+    def render_rune_challenge(self):
+        if ENABLE_RUNES and self.game_state.rune_challenge:
+            self.game_state.rune_challenge.draw(self.main_surface)
 
     def highlight_text(self, item_name, coords):
         # TODO: вот же пример исчезающего объекта, надо сделать как тут
